@@ -1,10 +1,10 @@
 {
-  "name": "superset-dataset-mcp",
+  "name": "superset-mcp",
   "version": "1.0.0",
   "description": "MCP server for reading and editing Apache Superset dataset data",
   "type": "module",
   "bin": {
-    "superset-dataset-mcp": "./build/index.js"
+    "superset-mcp": "./build/index.js"
   },
   "scripts": {
     "build": "tsc && chmod +x build/index.js",

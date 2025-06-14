@@ -1,4 +1,4 @@
-# Superset Dataset MCP Server
+# Superset MCP Server
 
 A Model Context Protocol (MCP) server for managing Apache Superset datasets, metrics, and SQL queries.
 
@@ -18,14 +18,59 @@ A Model Context Protocol (MCP) server for managing Apache Superset datasets, met
 
 ## 🛠️ Installation
 
-### 1. Clone and Install
+### Method 1: Using with Cursor (Recommended)
+
+#### 1. Add to Cursor MCP Configuration
+Add the following configuration to your Cursor MCP settings file:
+
+```json
+{
+  "mcpServers": {
+    "superset-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "superset-mcp"
+      ],
+      "env": {
+        "SUPERSET_BASE_URL": "",
+        "SUPERSET_USERNAME": "",
+        "SUPERSET_PASSWORD": ""
+      }
+    }
+  }
+}
+```
+
+#### 2. Environment Variables
+Configure your Superset connection by updating the `env` section in the MCP configuration:
+
+```json
+"env": {
+  "SUPERSET_BASE_URL": "your-superset-url",
+  "SUPERSET_USERNAME": "your_username",
+  "SUPERSET_PASSWORD": "your_password",
+}
+```
+
+**Alternative: Using Access Token**
+```json
+"env": {
+  "SUPERSET_BASE_URL": "your-superset-url",
+  "SUPERSET_ACCESS_TOKEN": "your_access_token"
+}
+```
+
+### Method 2: Local Development Installation
+
+#### 1. Clone and Install
 ```bash
 git clone <repository-url>
-cd superset-dataset-mcp
+cd superset-mcp
 npm install
 ```
 
-### 2. Environment Configuration
+#### 2. Environment Configuration
 Create a `.env` file or set environment variables:
 
 ```bash
@@ -44,7 +89,7 @@ export SUPERSET_ACCESS_TOKEN="your_access_token"
 export SUPERSET_AUTH_PROVIDER="db"  # Options: db, ldap, oauth
 ```
 
-### 3. Build and Run
+#### 3. Build and Run
 ```bash
 npm run build
 npm start
