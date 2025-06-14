@@ -17,6 +17,8 @@ export class SupersetClient {
   private config: SupersetConfig;
   private isAuthenticated = false;
   private csrfToken?: string;
+  private isRefreshing = false; // Prevent concurrent token refresh
+  private refreshPromise?: Promise<void>; // Store refresh promise for reuse
 
   constructor(config: SupersetConfig) {
     this.config = config;
@@ -36,12 +38,89 @@ export class SupersetClient {
       }
       return config;
     });
+
+    // Response interceptor: handle token expiration
+    this.api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // Check if it's a 401 error and not the login request itself
+        if (error.response?.status === 401 && 
+            !originalRequest._retry && 
+            !originalRequest.url?.includes('/api/v1/security/login')) {
+          
+          originalRequest._retry = true;
+          
+          try {
+            // If token refresh is in progress, wait for completion
+            if (this.isRefreshing && this.refreshPromise) {
+              await this.refreshPromise;
+            } else {
+              // Start token refresh
+              await this.refreshToken();
+            }
+            
+            // Update Authorization header of original request
+            if (this.config.accessToken) {
+              originalRequest.headers.Authorization = `Bearer ${this.config.accessToken}`;
+            }
+            
+            // Retry original request
+            return this.api.request(originalRequest);
+          } catch (refreshError) {
+            // Refresh failed, clear authentication state
+            this.clearAuthState();
+            throw error;
+          }
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  // Refresh token
+  private async refreshToken(): Promise<void> {
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = this.performTokenRefresh();
+    
+    try {
+      await this.refreshPromise;
+    } finally {
+      this.isRefreshing = false;
+      this.refreshPromise = undefined;
+    }
+  }
+
+  // Perform token refresh
+  private async performTokenRefresh(): Promise<void> {
+    console.log('Token expired, attempting to refresh...');
+    
+    // Clear current authentication state
+    this.isAuthenticated = false;
+    this.csrfToken = undefined;
+    
+    // Re-authenticate
+    await this.authenticate();
+    
+    console.log('Token refreshed successfully');
+  }
+
+  // Clear authentication state
+  private clearAuthState(): void {
+    this.isAuthenticated = false;
+    this.config.accessToken = undefined;
+    this.csrfToken = undefined;
   }
 
   // Authentication login
   async authenticate(): Promise<void> {
-    if (this.config.accessToken) {
-      this.isAuthenticated = true;
+    if (this.config.accessToken && this.isAuthenticated) {
       return;
     }
 
@@ -50,6 +129,7 @@ export class SupersetClient {
     }
 
     try {
+      console.log('Authenticating with Superset...');
       const response = await this.api.post('/api/v1/security/login', {
         username: this.config.username,
         password: this.config.password,
@@ -59,7 +139,9 @@ export class SupersetClient {
 
       this.config.accessToken = response.data.access_token;
       this.isAuthenticated = true;
+      console.log('Authentication successful');
     } catch (error) {
+      console.error('Authentication failed:', getErrorMessage(error));
       throw new Error(`Authentication failed: ${getErrorMessage(error)}`);
     }
   }
@@ -120,6 +202,46 @@ export class SupersetClient {
     if (sessionCookie) {
       protectedApi.defaults.headers.common['Cookie'] = `session=${sessionCookie}`;
     }
+
+    // Add response interceptor for token expiration handling
+    protectedApi.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // Check if it's a 401 error and not the login request itself
+        if (error.response?.status === 401 && 
+            !originalRequest._retry && 
+            !originalRequest.url?.includes('/api/v1/security/login')) {
+          
+          originalRequest._retry = true;
+          
+          try {
+            // Refresh token
+            await this.refreshToken();
+            
+            // Re-obtain CSRF token
+            const { token: newToken, sessionCookie: newSessionCookie } = await this.ensureCsrfToken();
+            
+            // Update request headers
+            originalRequest.headers.Authorization = `Bearer ${this.config.accessToken}`;
+            originalRequest.headers['X-CSRFToken'] = newToken;
+            if (newSessionCookie) {
+              originalRequest.headers['Cookie'] = `session=${newSessionCookie}`;
+            }
+            
+            // Retry original request
+            return protectedApi.request(originalRequest);
+          } catch (refreshError) {
+            // Refresh failed, clear authentication state
+            this.clearAuthState();
+            throw error;
+          }
+        }
+        
+        return Promise.reject(error);
+      }
+    );
 
     return protectedApi.request(config);
   }
