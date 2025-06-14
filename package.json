@@ -1,8 +1,9 @@
 {
   "name": "superset-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for reading and editing Apache Superset dataset data",
   "type": "module",
+  "main": "build/index.js",
   "bin": {
     "superset-mcp": "./build/index.js"
   },
@@ -22,7 +23,8 @@
     "typescript": "^5.3.3"
   },
   "files": [
-    "build"
+    "build",
+    "README.md"
   ],
   "keywords": [
     "mcp",
@@ -31,6 +33,7 @@
     "apache-superset",
     "model-context-protocol"
   ],
-  "author": "Your Name",
+  "homepage": "https://github.com/winding2020/superset-mcp",
+  "author": "Winding2020",
   "license": "MIT"
 } 
