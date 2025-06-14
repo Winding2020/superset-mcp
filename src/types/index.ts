@@ -1,13 +1,13 @@
-// Superset客户端配置接口
+// Superset client configuration interface
 export interface SupersetConfig {
   baseUrl: string;
   username?: string;
   password?: string;
   accessToken?: string;
-  authProvider?: string; // 认证提供者，默认为'db'，可选值: 'db', 'ldap', 'oauth'等
+  authProvider?: string; // Authentication provider, default is 'db', options: 'db', 'ldap', 'oauth', etc.
 }
 
-// Dataset数据结构
+// Dataset data structure
 export interface Dataset {
   id: number;
   database_id: number;
@@ -24,7 +24,7 @@ export interface Dataset {
   columns?: Array<any>;
 }
 
-// Dataset Metric数据结构
+// Dataset Metric data structure
 export interface DatasetMetric {
   id?: number;
   metric_name: string;
@@ -38,7 +38,7 @@ export interface DatasetMetric {
   is_restricted?: boolean;
 }
 
-// Dataset列信息
+// Dataset column information
 export interface DatasetColumn {
   column_name: string;
   type: string;
@@ -48,7 +48,7 @@ export interface DatasetColumn {
   verbose_name?: string;
 }
 
-// SQL执行请求参数
+// SQL execution request parameters
 export interface SqlExecuteRequest {
   database_id: number;
   sql: string;
@@ -57,7 +57,7 @@ export interface SqlExecuteRequest {
   expand_data?: boolean;
 }
 
-// SQL执行响应
+// SQL execution response
 export interface SqlExecuteResponse {
   query_id?: number;
   status: string;
@@ -102,13 +102,13 @@ export interface SqlExecuteResponse {
   error?: string;
 }
 
-// API响应类型
+// API response types
 export interface DatasetListResponse {
   result: Dataset[];
   count: number;
 }
 
-// CSRF令牌响应
+// CSRF token response
 export interface CsrfTokenResponse {
   token: string;
   sessionCookie: string;

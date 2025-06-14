@@ -1,20 +1,20 @@
 export const resourceDefinitions = [
   {
     uri: "superset://datasets",
-    name: "Superset Datasets概览",
-    description: "Superset中所有datasets的概览信息",
+    name: "Superset Datasets Overview",
+    description: "Overview information of all datasets in Superset",
     mimeType: "text/plain",
   },
   {
     uri: "superset://databases", 
-    name: "Superset数据库列表",
-    description: "Superset中配置的所有数据库连接",
+    name: "Superset Database List",
+    description: "All database connections configured in Superset",
     mimeType: "text/plain",
   },
   {
     uri: "superset://dataset-metrics",
-    name: "Dataset Metrics概览",
-    description: "所有datasets中定义的metrics概览",
+    name: "Dataset Metrics Overview",
+    description: "Overview of metrics defined in all datasets",
     mimeType: "text/plain",
   },
 ]; 

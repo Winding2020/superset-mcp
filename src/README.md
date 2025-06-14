@@ -1,68 +1,68 @@
-# Superset MCP 模块结构
+# Superset MCP Module Structure
 
-本项目已经模块化，代码结构如下：
+This project has been modularized with the following code structure:
 
-## 目录结构
+## Directory Structure
 
 ```
 src/
-├── index.ts                    # 主入口文件
+├── index.ts                    # Main entry file
 ├── types/
-│   └── index.ts               # 类型定义
+│   └── index.ts               # Type definitions
 ├── utils/
-│   └── error.ts               # 错误处理工具
+│   └── error.ts               # Error handling utilities
 ├── client/
-│   ├── index.ts               # 客户端导出
-│   └── superset-client.ts     # Superset API客户端
+│   ├── index.ts               # Client exports
+│   └── superset-client.ts     # Superset API client
 ├── handlers/
-│   ├── tool-handlers.ts       # 工具处理器
-│   └── resource-handlers.ts   # 资源处理器
+│   ├── tool-handlers.ts       # Tool handlers
+│   └── resource-handlers.ts   # Resource handlers
 └── server/
-    ├── tools.ts               # 工具定义
-    └── resources.ts           # 资源定义
+    ├── tools.ts               # Tool definitions
+    └── resources.ts           # Resource definitions
 ```
 
-## 模块说明
+## Module Descriptions
 
-### `types/` - 类型定义
-- `SupersetConfig`: Superset客户端配置接口
-- `Dataset`: Dataset数据结构
-- `DatasetMetric`: Dataset Metric数据结构
-- `DatasetColumn`: Dataset列信息
-- `DatasetListResponse`: API响应类型
-- `CsrfTokenResponse`: CSRF令牌响应
+### `types/` - Type Definitions
+- `SupersetConfig`: Superset client configuration interface
+- `Dataset`: Dataset data structure
+- `DatasetMetric`: Dataset Metric data structure
+- `DatasetColumn`: Dataset column information
+- `DatasetListResponse`: API response types
+- `CsrfTokenResponse`: CSRF token response
 
-### `utils/` - 工具函数
-- `getErrorMessage()`: 统一的错误处理函数
+### `utils/` - Utility Functions
+- `getErrorMessage()`: Unified error handling function
 
-### `client/` - Superset客户端
-- `SupersetClient`: 主要的API客户端类，包含所有与Superset API交互的方法
-- `initializeSupersetClient()`: 客户端初始化函数
+### `client/` - Superset Client
+- `SupersetClient`: Main API client class containing all methods for interacting with Superset API
+- `initializeSupersetClient()`: Client initialization function
 
-### `handlers/` - MCP处理器
-- `handleToolCall()`: 处理所有工具调用请求
-- `handleResourceRead()`: 处理所有资源读取请求
+### `handlers/` - MCP Handlers
+- `handleToolCall()`: Handles all tool call requests
+- `handleResourceRead()`: Handles all resource read requests
 
-### `server/` - 服务器配置
-- `toolDefinitions`: 所有工具的定义和schema
-- `resourceDefinitions`: 所有资源的定义
+### `server/` - Server Configuration
+- `toolDefinitions`: Definitions and schemas for all tools
+- `resourceDefinitions`: Definitions for all resources
 
-### `index.ts` - 主入口
-- 创建MCP服务器
-- 注册请求处理器
-- 启动服务器
+### `index.ts` - Main Entry
+- Create MCP server
+- Register request handlers
+- Start server
 
-## 优势
+## Advantages
 
-1. **模块化**: 代码按功能分离，易于维护和扩展
-2. **类型安全**: 统一的类型定义，减少类型错误
-3. **可测试性**: 每个模块可以独立测试
-4. **可扩展性**: 新功能可以轻松添加到相应模块
-5. **代码复用**: 客户端和工具函数可以在不同地方复用
+1. **Modular**: Code is separated by functionality, easy to maintain and extend
+2. **Type Safety**: Unified type definitions reduce type errors
+3. **Testability**: Each module can be tested independently
+4. **Extensibility**: New features can be easily added to corresponding modules
+5. **Code Reuse**: Client and utility functions can be reused in different places
 
-## 添加新功能
+## Adding New Features
 
-1. **新的API方法**: 在 `client/superset-client.ts` 中添加
-2. **新的工具**: 在 `server/tools.ts` 中定义，在 `handlers/tool-handlers.ts` 中实现
-3. **新的资源**: 在 `server/resources.ts` 中定义，在 `handlers/resource-handlers.ts` 中实现
-4. **新的类型**: 在 `types/index.ts` 中添加 
+1. **New API methods**: Add in `client/superset-client.ts`
+2. **New tools**: Define in `server/tools.ts`, implement in `handlers/tool-handlers.ts`
+3. **New resources**: Define in `server/resources.ts`, implement in `handlers/resource-handlers.ts`
+4. **New types**: Add in `types/index.ts` 

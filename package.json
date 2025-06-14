@@ -1,7 +1,7 @@
 {
   "name": "superset-dataset-mcp",
   "version": "1.0.0",
-  "description": "MCP服务器，用于读取和编辑Apache Superset的dataset数据",
+  "description": "MCP server for reading and editing Apache Superset dataset data",
   "type": "module",
   "bin": {
     "superset-dataset-mcp": "./build/index.js"

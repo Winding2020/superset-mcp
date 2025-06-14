@@ -1,10 +1,10 @@
 import { SupersetClient } from "./superset-client.js";
 import { SupersetConfig } from "../types/index.js";
 
-// 全局Superset客户端实例
+// Global Superset client instance
 let supersetClient: SupersetClient | null = null;
 
-// 初始化Superset客户端
+// Initialize Superset client
 export function initializeSupersetClient(): SupersetClient {
   if (!supersetClient) {
     const config: SupersetConfig = {

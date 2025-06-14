@@ -16,13 +16,13 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `找到 ${result.count} 个datasets（显示第 ${page + 1} 页）:\n\n` +
+              text: `Found ${result.count} datasets (showing page ${page + 1}):\n\n` +
                 result.result.map(dataset => 
                   `ID: ${dataset.id}\n` +
-                  `名称: ${dataset.table_name}\n` +
-                  `数据库ID: ${dataset.database_id}\n` +
+                  `Name: ${dataset.table_name}\n` +
+                  `Database ID: ${dataset.database_id}\n` +
                   `Schema: ${dataset.schema || 'N/A'}\n` +
-                  `描述: ${dataset.description || 'N/A'}\n` +
+                  `Description: ${dataset.description || 'N/A'}\n` +
                   `---`
                 ).join('\n')
             },
@@ -38,16 +38,16 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset详细信息:\n\n` +
+              text: `Dataset Details:\n\n` +
                 `ID: ${dataset.id}\n` +
-                `表名: ${dataset.table_name}\n` +
-                `数据库ID: ${dataset.database_id}\n` +
+                `Table Name: ${dataset.table_name}\n` +
+                `Database ID: ${dataset.database_id}\n` +
                 `Schema: ${dataset.schema || 'N/A'}\n` +
-                `描述: ${dataset.description || 'N/A'}\n` +
+                `Description: ${dataset.description || 'N/A'}\n` +
                 `SQL: ${dataset.sql || 'N/A'}\n` +
-                `缓存超时: ${dataset.cache_timeout || 'N/A'}\n` +
-                `列数量: ${dataset.columns?.length || 0}\n` +
-                `指标数量: ${dataset.metrics?.length || 0}`
+                `Cache Timeout: ${dataset.cache_timeout || 'N/A'}\n` +
+                `Column Count: ${dataset.columns?.length || 0}\n` +
+                `Metric Count: ${dataset.metrics?.length || 0}`
             },
           ],
         };
@@ -61,10 +61,10 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset创建成功！\n\n` +
+              text: `Dataset created successfully!\n\n` +
                 `ID: ${newDataset.id}\n` +
-                `表名: ${newDataset.table_name}\n` +
-                `数据库ID: ${newDataset.database_id}\n` +
+                `Table Name: ${newDataset.table_name}\n` +
+                `Database ID: ${newDataset.database_id}\n` +
                 `Schema: ${newDataset.schema || 'N/A'}`
             },
           ],
@@ -79,10 +79,10 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${id} 更新成功！\n\n` +
-                `表名: ${updatedDataset.table_name}\n` +
-                `描述: ${updatedDataset.description || 'N/A'}\n` +
-                `缓存超时: ${updatedDataset.cache_timeout || 'N/A'}`
+              text: `Dataset ${id} updated successfully!\n\n` +
+                `Table Name: ${updatedDataset.table_name}\n` +
+                `Description: ${updatedDataset.description || 'N/A'}\n` +
+                `Cache Timeout: ${updatedDataset.cache_timeout || 'N/A'}`
             },
           ],
         };
@@ -96,7 +96,7 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${id} 删除成功！`
+              text: `Dataset ${id} deleted successfully!`
             },
           ],
         };
@@ -110,7 +110,7 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${id} schema刷新成功！\n\n刷新结果: ${JSON.stringify(result, null, 2)}`
+              text: `Dataset ${id} schema refreshed successfully!\n\nRefresh result: ${JSON.stringify(result, null, 2)}`
             },
           ],
         };
@@ -123,11 +123,11 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `找到 ${databases.length} 个数据库:\n\n` +
+              text: `Found ${databases.length} databases:\n\n` +
                 databases.map(db => 
                   `ID: ${db.id}\n` +
-                  `名称: ${db.database_name}\n` +
-                  `驱动: ${db.sqlalchemy_uri?.split('://')[0] || 'N/A'}\n` +
+                  `Name: ${db.database_name}\n` +
+                  `Driver: ${db.sqlalchemy_uri?.split('://')[0] || 'N/A'}\n` +
                   `---`
                 ).join('\n')
             },
@@ -146,10 +146,10 @@ export async function handleToolCall(request: any) {
               text: `Dataset ${dataset_id} metrics:\n\n` +
                 metrics.map(metric => 
                   `ID: ${metric.id}\n` +
-                  `名称: ${metric.metric_name}\n` +
-                  `类型: ${metric.metric_type || 'N/A'}\n` +
-                  `表达式: ${metric.expression}\n` +
-                  `描述: ${metric.description || 'N/A'}\n` +
+                  `Name: ${metric.metric_name}\n` +
+                  `Type: ${metric.metric_type || 'N/A'}\n` +
+                  `Expression: ${metric.expression}\n` +
+                  `Description: ${metric.description || 'N/A'}\n` +
                   `---`
                 ).join('\n')
             },
@@ -166,14 +166,14 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} metric创建成功！\n\n` +
+              text: `Dataset ${dataset_id} metric created successfully!\n\n` +
                 `ID: ${newMetric.id}\n` +
-                `名称: ${newMetric.metric_name}\n` +
-                `类型: ${newMetric.metric_type || 'N/A'}\n` +
-                `表达式: ${newMetric.expression}\n` +
-                `描述: ${newMetric.description || 'N/A'}\n` +
-                `显示名称: ${newMetric.verbose_name || 'N/A'}\n` +
-                `D3格式化字符串: ${newMetric.d3format || 'N/A'}`
+                `Name: ${newMetric.metric_name}\n` +
+                `Type: ${newMetric.metric_type || 'N/A'}\n` +
+                `Expression: ${newMetric.expression}\n` +
+                `Description: ${newMetric.description || 'N/A'}\n` +
+                `Display Name: ${newMetric.verbose_name || 'N/A'}\n` +
+                `D3 Format String: ${newMetric.d3format || 'N/A'}`
             },
           ],
         };
@@ -188,13 +188,13 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} metric ${metric_id} 更新成功！\n\n` +
-                `名称: ${updatedMetric.metric_name}\n` +
-                `类型: ${updatedMetric.metric_type || 'N/A'}\n` +
-                `表达式: ${updatedMetric.expression}\n` +
-                `描述: ${updatedMetric.description || 'N/A'}\n` +
-                `显示名称: ${updatedMetric.verbose_name || 'N/A'}\n` +
-                `D3格式化字符串: ${updatedMetric.d3format || 'N/A'}`
+              text: `Dataset ${dataset_id} metric ${metric_id} updated successfully!\n\n` +
+                `Name: ${updatedMetric.metric_name}\n` +
+                `Type: ${updatedMetric.metric_type || 'N/A'}\n` +
+                `Expression: ${updatedMetric.expression}\n` +
+                `Description: ${updatedMetric.description || 'N/A'}\n` +
+                `Display Name: ${updatedMetric.verbose_name || 'N/A'}\n` +
+                `D3 Format String: ${updatedMetric.d3format || 'N/A'}`
             },
           ],
         };
@@ -208,7 +208,7 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} metric ${metric_id} 删除成功！`
+              text: `Dataset ${dataset_id} metric ${metric_id} deleted successfully!`
             },
           ],
         };
@@ -222,13 +222,13 @@ export async function handleToolCall(request: any) {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} 字段信息:\n\n` +
+              text: `Dataset ${dataset_id} column information:\n\n` +
                 columns.map(col => 
-                  `• ${col.column_name} (类型: ${col.type})\n` +
-                  `  描述: ${col.description || 'N/A'}\n` +
-                  `  is_dttm: ${col.is_dttm ? '是' : '否'}\n` +
-                  `  表达式: ${col.expression || 'N/A'}\n` +
-                  `  显示名称: ${col.verbose_name || 'N/A'}\n`
+                  `• ${col.column_name} (Type: ${col.type})\n` +
+                  `  Description: ${col.description || 'N/A'}\n` +
+                  `  is_dttm: ${col.is_dttm ? 'Yes' : 'No'}\n` +
+                  `  Expression: ${col.expression || 'N/A'}\n` +
+                  `  Display Name: ${col.verbose_name || 'N/A'}\n`
                 ).join('\n')
             },
           ],
@@ -247,26 +247,26 @@ export async function handleToolCall(request: any) {
         
         const result = await client.executeSql(sqlRequest);
         
-        // 格式化响应
-        let responseText = `SQL执行结果:\n\n`;
-        responseText += `状态: ${result.status}\n`;
+        // Format response
+        let responseText = `SQL execution result:\n\n`;
+        responseText += `Status: ${result.status}\n`;
         
         if (result.query_id) {
-          responseText += `查询ID: ${result.query_id}\n`;
+          responseText += `Query ID: ${result.query_id}\n`;
         }
         
         if (result.query) {
           responseText += `Schema: ${result.query.schema || 'N/A'}\n`;
-          responseText += `返回行数: ${result.query.rows}\n`;
-          responseText += `执行状态: ${result.query.state}\n`;
+          responseText += `Rows returned: ${result.query.rows}\n`;
+          responseText += `Execution status: ${result.query.state}\n`;
           
           if (result.query.errorMessage) {
-            responseText += `错误信息: ${result.query.errorMessage}\n`;
+            responseText += `Error message: ${result.query.errorMessage}\n`;
           }
         }
         
         if (result.columns && result.columns.length > 0) {
-          responseText += `\n列信息:\n`;
+          responseText += `\nColumn information:\n`;
           result.columns.forEach(col => {
             responseText += `• ${col.name} (${col.type})\n`;
           });
@@ -274,17 +274,17 @@ export async function handleToolCall(request: any) {
         
         if (result.data && result.data.length > 0) {
           const displayRowCount = Math.max(1, Math.min(display_rows, result.data.length));
-          responseText += `\n数据预览 (前${displayRowCount}行):\n`;
+          responseText += `\nData preview (first ${displayRowCount} rows):\n`;
           const previewData = result.data.slice(0, displayRowCount);
           
-          // 创建表格格式的输出
+          // Create table format output
           if (result.columns && result.columns.length > 0) {
-            // 表头
+            // Headers
             const headers = result.columns.map(col => col.name);
             responseText += headers.join(' | ') + '\n';
             responseText += headers.map(() => '---').join(' | ') + '\n';
             
-            // 数据行
+            // Data rows
             previewData.forEach(row => {
               const values = headers.map(header => {
                 const value = row[header];
@@ -293,17 +293,17 @@ export async function handleToolCall(request: any) {
               responseText += values.join(' | ') + '\n';
             });
           } else {
-            // 如果没有列信息，直接显示JSON
+            // If no column information, display JSON directly
             responseText += JSON.stringify(previewData, null, 2);
           }
           
           if (result.data.length > displayRowCount) {
-            responseText += `\n... 还有 ${result.data.length - displayRowCount} 行数据\n`;
+            responseText += `\n... ${result.data.length - displayRowCount} more rows\n`;
           }
         }
         
         if (result.error) {
-          responseText += `\n错误: ${result.error}\n`;
+          responseText += `\nError: ${result.error}\n`;
         }
         
         return {
@@ -317,14 +317,14 @@ export async function handleToolCall(request: any) {
       }
       
       default:
-        throw new Error(`未知工具: ${request.params.name}`);
+        throw new Error(`Unknown tool: ${request.params.name}`);
     }
   } catch (error) {
     return {
       content: [
         {
           type: "text",
-          text: `错误: ${getErrorMessage(error)}`,
+          text: `Error: ${getErrorMessage(error)}`,
         },
       ],
       isError: true,

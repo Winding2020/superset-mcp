@@ -16,7 +16,7 @@ import { resourceDefinitions } from "./server/resources.js";
 import { handleToolCall } from "./handlers/tool-handlers.js";
 import { handleResourceRead } from "./handlers/resource-handlers.js";
 
-// 创建MCP服务器
+// Create MCP server
 const server = new Server({
   name: "superset-dataset-mcp",
   version: "1.0.0",
@@ -27,45 +27,45 @@ const server = new Server({
   },
 });
 
-// 工具列表
+// Tool list handler
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: toolDefinitions,
   };
 });
 
-// 工具执行处理器
+// Tool execution handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     return await handleToolCall(request);
   } catch (error) {
-    throw new McpError(ErrorCode.InternalError, `工具执行失败: ${error}`);
+    throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${error}`);
   }
 });
 
-// 资源列表
+// Resource list handler
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   return {
     resources: resourceDefinitions,
   };
 });
 
-// 资源读取处理器
+// Resource read handler
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   try {
     return await handleResourceRead(request);
   } catch (error) {
-    throw new McpError(ErrorCode.InternalError, `资源读取失败: ${error}`);
+    throw new McpError(ErrorCode.InternalError, `Resource read failed: ${error}`);
   }
 });
 
-// 启动服务器
+// Start server
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
 main().catch((error) => {
-  console.error("服务器启动失败:", error);
+  console.error("Server startup failed:", error);
   process.exit(1);
 }); 

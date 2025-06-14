@@ -1,119 +1,125 @@
 # Superset Dataset MCP Server
 
-一个用于管理Apache Superset数据集和指标的MCP（Model Context Protocol）服务器。
+A Model Context Protocol (MCP) server for managing Apache Superset datasets, metrics, and SQL queries.
 
-## 功能特性
+## 🚀 Features
 
-### Dataset管理
-- 列出所有datasets
-- 获取单个dataset详细信息
-- 创建新dataset
-- 更新dataset
-- 删除dataset
-- 刷新dataset schema
+- **Dataset Management**: Full CRUD operations for Superset datasets
+- **Metrics Management**: Create, update, and manage dataset metrics
+- **SQL Query Execution**: Execute SQL queries directly through Superset
+- **Database Integration**: List and manage database connections
+- **Resource Access**: Browse datasets, databases, and metrics through MCP resources
 
-### Dataset Metrics管理 ✨ 新功能
-- 获取dataset的所有metrics
-- 创建新的metric
-- 更新现有metric
-- 删除metric
+## 📋 Prerequisites
 
-### SQL查询执行 🚀 新功能
-- 使用/api/v1/sqllab/execute/端点执行SQL查询
-- 支持同步执行
-- 支持结果限制和数据展开
+- Node.js 18+ 
+- Access to an Apache Superset instance
+- Valid Superset credentials (username/password or access token)
 
-### 数据库管理
-- 列出所有数据库连接
+## 🛠️ Installation
 
-## 安装和使用
+### 1. Clone and Install
+```bash
+git clone <repository-url>
+cd superset-dataset-mcp
+npm install
+```
 
-### 环境变量配置
+### 2. Environment Configuration
+Create a `.env` file or set environment variables:
 
 ```bash
+# Required
 export SUPERSET_BASE_URL="http://localhost:8088"
+
+# Authentication (choose one method)
+# Method 1: Username/Password
 export SUPERSET_USERNAME="your_username"
 export SUPERSET_PASSWORD="your_password"
-# 或者使用访问令牌
+
+# Method 2: Access Token
 export SUPERSET_ACCESS_TOKEN="your_access_token"
-# 认证提供者（可选，默认为'db'）
-export SUPERSET_AUTH_PROVIDER="db"  # 可选值: db, ldap, oauth等
+
+# Optional
+export SUPERSET_AUTH_PROVIDER="db"  # Options: db, ldap, oauth
 ```
 
-### 构建和运行
-
+### 3. Build and Run
 ```bash
-npm install
 npm run build
-node build/index.js
+npm start
 ```
 
-## 可用工具
+## 🔧 Available Tools
 
-### Dataset工具
-- `list_datasets` - 获取datasets列表
-- `get_dataset` - 获取单个dataset详情
-- `create_dataset` - 创建新dataset
-- `update_dataset` - 更新dataset
-- `delete_dataset` - 删除dataset
-- `refresh_dataset_schema` - 刷新dataset schema
+### Dataset Operations
+| Tool | Description |
+|------|-------------|
+| `list_datasets` | Get paginated list of all datasets |
+| `get_dataset` | Get detailed information for a specific dataset |
+| `create_dataset` | Create a new dataset |
+| `update_dataset` | Update existing dataset properties |
+| `delete_dataset` | Delete a dataset |
+| `refresh_dataset_schema` | Refresh dataset schema from source |
 
-### Dataset Metrics工具 ✨ 新功能
-- `get_dataset_metrics` - 获取指定dataset的所有metrics
-- `create_dataset_metric` - 为dataset创建新的metric
-- `update_dataset_metric` - 更新dataset中的metric
-- `delete_dataset_metric` - 删除dataset中的metric
-- `get_dataset_columns` - 获取dataset的字段信息（创建metrics时参考）
+### Metrics Operations
+| Tool | Description |
+|------|-------------|
+| `get_dataset_metrics` | Get all metrics for a dataset |
+| `create_dataset_metric` | Create a new metric |
+| `update_dataset_metric` | Update existing metric |
+| `delete_dataset_metric` | Delete a metric |
+| `get_dataset_columns` | Get column information (useful for metric creation) |
 
-### SQL查询工具 🚀 新功能
-- `execute_sql` - 使用/api/v1/sqllab/execute/端点执行SQL查询
+### SQL Operations
+| Tool | Description |
+|------|-------------|
+| `execute_sql` | Execute SQL queries with result limiting |
 
-### 数据库工具
-- `list_databases` - 获取数据库列表
+### Database Operations
+| Tool | Description |
+|------|-------------|
+| `list_databases` | Get all configured database connections |
 
-## 可用资源
+## 📚 Resources
 
-- `superset://datasets` - Superset Datasets概览
-- `superset://databases` - Superset数据库列表
-- `superset://dataset-metrics` - Dataset Metrics概览 ✨ 新功能
+Access read-only overviews through MCP resources:
 
-## SQL查询执行使用示例 🚀 新功能
+- `superset://datasets` - Overview of all datasets
+- `superset://databases` - List of database connections  
+- `superset://dataset-metrics` - Overview of all metrics across datasets
 
-### 基本SQL查询
+## 💡 Usage Examples
+
+### Dataset Management
+
+#### Create a Dataset
 ```json
 {
-  "tool": "execute_sql",
+  "tool": "create_dataset",
   "arguments": {
     "database_id": 1,
-    "sql": "SELECT * FROM sales LIMIT 10"
-  }
-}
-```
-
-### 带schema的查询
-```json
-{
-  "tool": "execute_sql",
-  "arguments": {
-    "database_id": 1,
-    "sql": "SELECT COUNT(*) as total_records FROM public.users",
+    "table_name": "sales_data",
     "schema": "public",
-    "limit": 1000
+    "description": "Sales transaction data"
   }
 }
 ```
 
-## SQL执行参数说明
+#### List Datasets
+```json
+{
+  "tool": "list_datasets",
+  "arguments": {
+    "page": 0,
+    "pageSize": 20
+  }
+}
+```
 
-- `database_id` - 数据库ID（必需）
-- `sql` - 要执行的SQL查询语句（必需）
-- `schema` - 数据库schema（可选）
-- `limit` - 查询结果行数限制（默认1000）
-- `expand_data` - 是否展开数据（默认true）
+### Metrics Management
 
-## Dataset Metrics使用示例
-
-### 获取dataset的字段信息（创建metrics前的准备）
+#### Get Column Information (Before Creating Metrics)
 ```json
 {
   "tool": "get_dataset_columns",
@@ -123,81 +129,111 @@ node build/index.js
 }
 ```
 
-### 获取dataset的metrics
-```json
-{
-  "tool": "get_dataset_metrics",
-  "arguments": {
-    "dataset_id": 1
-  }
-}
-```
-
-### 创建新metric
+#### Create a Metric
 ```json
 {
   "tool": "create_dataset_metric",
   "arguments": {
     "dataset_id": 1,
-    "metric_name": "total_sales",
-    "expression": "SUM(sales_amount)",
-    "description": "总销售额",
-    "verbose_name": "总销售额",
-    "d3format": ",.2f"
+    "metric_name": "total_revenue",
+    "expression": "SUM(amount)",
+    "description": "Total revenue from sales",
+    "verbose_name": "Total Revenue",
+    "d3format": "$,.2f"
   }
 }
 ```
 
-### 更新metric
+### SQL Query Execution
+
+#### Basic Query
 ```json
 {
-  "tool": "update_dataset_metric",
+  "tool": "execute_sql",
   "arguments": {
-    "dataset_id": 1,
-    "metric_id": 5,
-    "expression": "SUM(sales_amount * 1.1)",
-    "description": "总销售额（含税）"
+    "database_id": 1,
+    "sql": "SELECT COUNT(*) FROM users WHERE active = true"
   }
 }
 ```
 
-### 删除metric
+#### Advanced Query with Parameters
 ```json
 {
-  "tool": "delete_dataset_metric",
+  "tool": "execute_sql",
   "arguments": {
-    "dataset_id": 1,
-    "metric_id": 5
+    "database_id": 1,
+    "sql": "SELECT * FROM sales WHERE date >= '2024-01-01'",
+    "schema": "analytics",
+    "limit": 500,
+    "display_rows": 10
   }
 }
 ```
 
-## Metric字段说明
+## 📖 API Reference
 
-- `metric_name` - Metric名称（必需）
-- `expression` - SQL表达式（必需）
-- `metric_type` - Metric类型（可选）
-- `description` - 描述（可选）
-- `verbose_name` - 显示名称（可选）
-- `warning_text` - 警告文本（可选）
-- `d3format` - D3格式化字符串（可选）
-- `extra` - 额外配置（可选）
-- `is_restricted` - 是否受限（可选）
+### Metric Field Reference
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `metric_name` | string | ✅ | Unique metric identifier |
+| `expression` | string | ✅ | SQL expression for the metric |
+| `metric_type` | string | ❌ | Type of metric (e.g., 'count', 'sum') |
+| `description` | string | ❌ | Human-readable description |
+| `verbose_name` | string | ❌ | Display name in UI |
+| `d3format` | string | ❌ | D3.js format string for display |
+| `warning_text` | string | ❌ | Warning message for users |
+| `extra` | string | ❌ | Additional configuration (JSON) |
+| `is_restricted` | boolean | ❌ | Access restriction flag |
 
-## 错误处理
+### SQL Execution Parameters
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `database_id` | number | ✅ | - | Target database ID |
+| `sql` | string | ✅ | - | SQL query to execute |
+| `schema` | string | ❌ | - | Database schema |
+| `limit` | number | ❌ | 1000 | Maximum rows to return |
+| `expand_data` | boolean | ❌ | true | Whether to expand result data |
+| `display_rows` | number | ❌ | 10 | Rows to show in preview |
 
-所有API调用都包含适当的错误处理，会返回详细的错误信息以帮助调试。
+## 🔍 Error Handling
 
-## 许可证
+The server provides comprehensive error handling with detailed messages:
 
-MIT License
+- **Authentication errors**: Invalid credentials or expired tokens
+- **Permission errors**: Insufficient access rights
+- **Validation errors**: Invalid parameters or data
+- **API errors**: Superset API-specific errors with full context
 
-## 贡献
+## 🏗️ Development
 
-欢迎提交问题和拉取请求！
+### Project Structure
+```
+src/
+├── index.ts              # Main entry point
+├── types/               # TypeScript type definitions
+├── client/              # Superset API client
+├── handlers/            # MCP request handlers  
+├── server/              # Tool and resource definitions
+└── utils/               # Utility functions
+```
 
-## 相关链接
+### Adding New Features
+1. **New API methods**: Add to `client/superset-client.ts`
+2. **New tools**: Define in `server/tools.ts`, implement in `handlers/tool-handlers.ts`
+3. **New resources**: Define in `server/resources.ts`, implement in `handlers/resource-handlers.ts`
+4. **New types**: Add to `types/index.ts`
 
-- [Apache Superset](https://superset.apache.org/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
+### Development Commands
+```bash
+npm run dev      # Watch mode for development
+npm run build    # Build for production
+npm run start    # Run built server
+npm run inspector # Debug with MCP inspector
+```
+
+## 🔗 Related Links
+
+- [Apache Superset](https://superset.apache.org/) - Modern data exploration platform
+- [Model Context Protocol](https://modelcontextprotocol.io/) - Protocol specification
+- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) - SDK documentation

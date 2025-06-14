@@ -11,7 +11,7 @@ import {
 } from "../types/index.js";
 import { getErrorMessage } from "../utils/error.js";
 
-// Superset API客户端类
+// Superset API client class
 export class SupersetClient {
   private api: AxiosInstance;
   private config: SupersetConfig;
@@ -26,10 +26,10 @@ export class SupersetClient {
       headers: {
         'Content-Type': 'application/json',
       },
-      withCredentials: true, // 启用cookie支持以维持session
+      withCredentials: true, // Enable cookie support to maintain session
     });
 
-    // 请求拦截器：添加认证token
+    // Request interceptor: add authentication token
     this.api.interceptors.request.use((config) => {
       if (this.config.accessToken) {
         config.headers.Authorization = `Bearer ${this.config.accessToken}`;
@@ -38,7 +38,7 @@ export class SupersetClient {
     });
   }
 
-  // 认证登录
+  // Authentication login
   async authenticate(): Promise<void> {
     if (this.config.accessToken) {
       this.isAuthenticated = true;
@@ -46,7 +46,7 @@ export class SupersetClient {
     }
 
     if (!this.config.username || !this.config.password) {
-      throw new Error("需要提供用户名和密码或访问令牌");
+      throw new Error("Username and password or access token required");
     }
 
     try {
@@ -60,11 +60,11 @@ export class SupersetClient {
       this.config.accessToken = response.data.access_token;
       this.isAuthenticated = true;
     } catch (error) {
-      throw new Error(`认证失败: ${getErrorMessage(error)}`);
+      throw new Error(`Authentication failed: ${getErrorMessage(error)}`);
     }
   }
 
-  // 获取CSRF令牌
+  // Get CSRF token
   private async getCsrfToken(): Promise<CsrfTokenResponse> {
     await this.ensureAuthenticated();
     
@@ -78,32 +78,32 @@ export class SupersetClient {
       this.csrfToken = token;
       return { token, sessionCookie };
     } catch (error) {
-      throw new Error(`获取CSRF令牌失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to get CSRF token: ${getErrorMessage(error)}`);
     }
   }
 
-  // 确保已认证
+  // Ensure authenticated
   private async ensureAuthenticated(): Promise<void> {
     if (!this.isAuthenticated) {
       await this.authenticate();
     }
   }
 
-  // 确保有CSRF令牌
+  // Ensure CSRF token exists
   private async ensureCsrfToken(): Promise<CsrfTokenResponse> {
     if (!this.csrfToken) {
       return await this.getCsrfToken();
     }
-    // 如果已有token，重新获取以确保session cookie是最新的
+    // If token exists, re-fetch to ensure session cookie is up to date
     return await this.getCsrfToken();
   }
 
-  // 执行需要CSRF保护的请求
+  // Execute CSRF-protected request
   private async makeProtectedRequest(config: any): Promise<any> {
     await this.ensureAuthenticated();
     const { token, sessionCookie } = await this.ensureCsrfToken();
     
-    // 创建一个新的axios实例来处理这个特定请求
+    // Create a new axios instance to handle this specific request
     const protectedApi = axios.create({
       baseURL: this.config.baseUrl,
       timeout: 30000,
@@ -116,7 +116,7 @@ export class SupersetClient {
       withCredentials: true,
     });
 
-    // 如果有session cookie，添加到请求中
+    // If session cookie exists, add it to the request
     if (sessionCookie) {
       protectedApi.defaults.headers.common['Cookie'] = `session=${sessionCookie}`;
     }
@@ -124,7 +124,7 @@ export class SupersetClient {
     return protectedApi.request(config);
   }
 
-  // 获取所有datasets
+  // Get all datasets
   async getDatasets(page = 0, pageSize = 20): Promise<DatasetListResponse> {
     await this.ensureAuthenticated();
     
@@ -145,11 +145,11 @@ export class SupersetClient {
         count: response.data.count,
       };
     } catch (error) {
-      throw new Error(`获取datasets失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to get datasets: ${getErrorMessage(error)}`);
     }
   }
 
-  // 根据ID获取单个dataset
+  // Get single dataset by ID
   async getDataset(id: number): Promise<Dataset> {
     await this.ensureAuthenticated();
     
@@ -157,29 +157,29 @@ export class SupersetClient {
       const response = await this.api.get(`/api/v1/dataset/${id}`);
       return response.data.result;
     } catch (error) {
-      throw new Error(`获取dataset ${id}失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to get dataset ${id}: ${getErrorMessage(error)}`);
     }
   }
 
-  // 创建新dataset
+  // Create new dataset
   async createDataset(dataset: Partial<Dataset>): Promise<Dataset> {
     try {
-      // 构建正确的请求数据格式，只包含API支持的字段
+      // Build correct request data format, only include API-supported fields
       const requestData: any = {
         table_name: dataset.table_name,
-        database: dataset.database_id, // Superset API需要database字段而不是database_id
+        database: dataset.database_id, // Superset API requires database field instead of database_id
       };
 
-      // 添加可选字段（只添加API支持的字段）
+      // Add optional fields (only add API-supported fields)
       if (dataset.schema) {
         requestData.schema = dataset.schema;
       }
       if (dataset.sql) {
         requestData.sql = dataset.sql;
       }
-      // 注意：description字段在创建时不被支持，需要在创建后通过更新来设置
+      // Note: description field is not supported during creation, needs to be set via update after creation
 
-      console.error('创建dataset请求数据:', JSON.stringify(requestData, null, 2));
+      console.error('Create dataset request data:', JSON.stringify(requestData, null, 2));
 
       const response = await this.makeProtectedRequest({
         method: 'POST',
@@ -189,30 +189,30 @@ export class SupersetClient {
 
       const createdDataset = response.data.result;
 
-      // 如果有描述，创建后立即更新
+      // If description exists, update immediately after creation
       if (dataset.description && createdDataset.id) {
         try {
           await this.updateDataset(createdDataset.id, { description: dataset.description });
           createdDataset.description = dataset.description;
         } catch (updateError) {
-          console.error('更新dataset描述失败:', updateError);
-          // 不抛出错误，因为dataset已经创建成功
+          console.error('Failed to update dataset description:', updateError);
+          // Don't throw error since dataset was created successfully
         }
       }
 
       return createdDataset;
     } catch (error) {
-      console.error('创建dataset详细错误:', error);
+      console.error('Create dataset detailed error:', error);
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any;
-        console.error('响应状态:', axiosError.response?.status);
-        console.error('响应数据:', JSON.stringify(axiosError.response?.data, null, 2));
+        console.error('Response status:', axiosError.response?.status);
+        console.error('Response data:', JSON.stringify(axiosError.response?.data, null, 2));
       }
-      throw new Error(`创建dataset失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to create dataset: ${getErrorMessage(error)}`);
     }
   }
 
-  // 更新dataset
+  // Update dataset
   async updateDataset(id: number, dataset: Partial<Dataset>): Promise<Dataset> {
     try {
       const response = await this.makeProtectedRequest({
@@ -222,11 +222,11 @@ export class SupersetClient {
       });
       return response.data.result;
     } catch (error) {
-      throw new Error(`更新dataset ${id}失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to update dataset ${id}: ${getErrorMessage(error)}`);
     }
   }
 
-  // 删除dataset
+  // Delete dataset
   async deleteDataset(id: number): Promise<void> {
     try {
       await this.makeProtectedRequest({
@@ -234,11 +234,11 @@ export class SupersetClient {
         url: `/api/v1/dataset/${id}`
       });
     } catch (error) {
-      throw new Error(`删除dataset ${id}失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to delete dataset ${id}: ${getErrorMessage(error)}`);
     }
   }
 
-  // 刷新dataset schema
+  // Refresh dataset schema
   async refreshDatasetSchema(id: number): Promise<any> {
     try {
       const response = await this.makeProtectedRequest({
@@ -247,11 +247,11 @@ export class SupersetClient {
       });
       return response.data.result;
     } catch (error) {
-      throw new Error(`刷新dataset ${id} schema失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to refresh dataset ${id} schema: ${getErrorMessage(error)}`);
     }
   }
 
-  // 获取数据库列表
+  // Get database list
   async getDatabases(): Promise<any[]> {
     await this.ensureAuthenticated();
     
@@ -259,11 +259,11 @@ export class SupersetClient {
       const response = await this.api.get('/api/v1/database/');
       return response.data.result;
     } catch (error) {
-      throw new Error(`获取数据库列表失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to get database list: ${getErrorMessage(error)}`);
     }
   }
 
-  // 获取dataset的metrics列表
+  // Get dataset metrics list
   async getDatasetMetrics(datasetId: number): Promise<DatasetMetric[]> {
     await this.ensureAuthenticated();
     
@@ -271,18 +271,18 @@ export class SupersetClient {
       const response = await this.api.get(`/api/v1/dataset/${datasetId}`);
       return response.data.result.metrics || [];
     } catch (error) {
-      throw new Error(`获取dataset ${datasetId} metrics失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to get dataset ${datasetId} metrics: ${getErrorMessage(error)}`);
     }
   }
 
-  // 创建dataset metric
+  // Create dataset metric
   async createDatasetMetric(datasetId: number, metric: Partial<DatasetMetric>): Promise<DatasetMetric> {
     try {
-      // 首先获取当前dataset
+      // First get current dataset
       const dataset = await this.getDataset(datasetId);
       const currentMetrics = dataset.metrics || [];
       
-      // 为新metric生成一个临时ID（负数，表示新创建）
+      // Generate a temporary ID for new metric (negative number indicates newly created)
       const newMetric = {
         metric_name: metric.metric_name,
         expression: metric.expression,
@@ -295,7 +295,7 @@ export class SupersetClient {
         is_restricted: metric.is_restricted,
       };
       
-      // 清理现有metrics，移除API不接受的字段
+      // Clean existing metrics, remove fields not accepted by API
       const cleanedCurrentMetrics = currentMetrics.map((m: any) => ({
         id: m.id,
         metric_name: m.metric_name,
@@ -309,38 +309,38 @@ export class SupersetClient {
         is_restricted: m.is_restricted,
       }));
       
-      // 添加新metric到metrics数组
+      // Add new metric to metrics array
       const newMetrics = [...cleanedCurrentMetrics, newMetric];
       
-      // 更新dataset
+      // Update dataset
       const response = await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
         data: { metrics: newMetrics }
       });
       
-      // 返回新创建的metric（通常是数组中的最后一个）
+      // Return newly created metric (usually the last one in the array)
       const updatedMetrics = response.data.result.metrics || [];
       return updatedMetrics[updatedMetrics.length - 1];
     } catch (error) {
-      throw new Error(`创建dataset ${datasetId} metric失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to create dataset ${datasetId} metric: ${getErrorMessage(error)}`);
     }
   }
 
-  // 更新dataset metric
+  // Update dataset metric
   async updateDatasetMetric(datasetId: number, metricId: number, metric: Partial<DatasetMetric>): Promise<DatasetMetric> {
     try {
-      // 获取当前dataset
+      // Get current dataset
       const dataset = await this.getDataset(datasetId);
       const currentMetrics = dataset.metrics || [];
       
-      // 找到并更新指定的metric
+      // Find and update specified metric
       const metricIndex = currentMetrics.findIndex((m: any) => m.id === metricId);
       if (metricIndex === -1) {
-        throw new Error(`Metric ${metricId} 不存在`);
+        throw new Error(`Metric ${metricId} does not exist`);
       }
       
-      // 清理现有metrics，移除API不接受的字段
+      // Clean existing metrics, remove fields not accepted by API
       const cleanedMetrics = currentMetrics.map((m: any, index: number) => {
         const cleanedMetric = {
           id: m.id,
@@ -355,7 +355,7 @@ export class SupersetClient {
           is_restricted: m.is_restricted,
         };
         
-        // 如果是要更新的metric，应用更新
+        // If this is the metric to update, apply updates
         if (index === metricIndex) {
           return {
             ...cleanedMetric,
@@ -368,35 +368,35 @@ export class SupersetClient {
         return cleanedMetric;
       });
       
-      // 更新dataset
+      // Update dataset
       const response = await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
         data: { metrics: cleanedMetrics }
       });
       
-      // 返回更新后的metric
+      // Return updated metric
       const finalMetrics = response.data.result.metrics || [];
       return finalMetrics[metricIndex];
     } catch (error) {
-      throw new Error(`更新dataset ${datasetId} metric ${metricId}失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to update dataset ${datasetId} metric ${metricId}: ${getErrorMessage(error)}`);
     }
   }
 
-  // 删除dataset metric
+  // Delete dataset metric
   async deleteDatasetMetric(datasetId: number, metricId: number): Promise<void> {
     try {
-      // 获取当前dataset
+      // Get current dataset
       const dataset = await this.getDataset(datasetId);
       const currentMetrics = dataset.metrics || [];
       
-      // 找到要删除的metric
+      // Find metric to delete
       const metricIndex = currentMetrics.findIndex((m: any) => m.id === metricId);
       if (metricIndex === -1) {
-        throw new Error(`Metric ${metricId} 不存在`);
+        throw new Error(`Metric ${metricId} does not exist`);
       }
       
-      // 清理并过滤metrics
+      // Clean and filter metrics
       const updatedMetrics = currentMetrics
         .filter((m: any) => m.id !== metricId)
         .map((m: any) => ({
@@ -412,18 +412,18 @@ export class SupersetClient {
           is_restricted: m.is_restricted,
         }));
       
-      // 更新dataset
+      // Update dataset
       await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
         data: { metrics: updatedMetrics }
       });
     } catch (error) {
-      throw new Error(`删除dataset ${datasetId} metric ${metricId}失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to delete dataset ${datasetId} metric ${metricId}: ${getErrorMessage(error)}`);
     }
   }
 
-  // 获取dataset的字段信息（用于创建metrics时参考）
+  // Get dataset column information (for reference when creating metrics)
   async getDatasetColumns(datasetId: number): Promise<DatasetColumn[]> {
     await this.ensureAuthenticated();
     
@@ -431,7 +431,7 @@ export class SupersetClient {
       const response = await this.api.get(`/api/v1/dataset/${datasetId}`);
       const dataset = response.data.result;
       
-      // 返回字段信息，包括物理字段和计算字段
+      // Return column information, including physical columns and calculated columns
       const columns = dataset.columns || [];
       return columns.map((col: any) => ({
         column_name: col.column_name,
@@ -442,27 +442,25 @@ export class SupersetClient {
         verbose_name: col.verbose_name,
       }));
     } catch (error) {
-      throw new Error(`获取dataset ${datasetId} 字段信息失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to get dataset ${datasetId} column information: ${getErrorMessage(error)}`);
     }
   }
 
-  // 执行SQL查询
+  // Execute SQL query
   async executeSql(request: SqlExecuteRequest): Promise<SqlExecuteResponse> {
     try {
-      // 构建请求数据，使用正确的API参数名
+      // Build request data using correct API parameter names
       const requestData = {
         database_id: request.database_id,
         sql: request.sql,
         schema: request.schema,
-        queryLimit: request.limit || 1000, // 使用queryLimit而不是limit
-        runAsync: false, // 使用runAsync而不是async，强制同步执行
-        expand_data: request.expand_data !== false, // 默认为true
-        select_as_cta: false, // 禁用CTA
+        queryLimit: request.limit || 1000, // Use queryLimit instead of limit
+        runAsync: false, // Use runAsync instead of async, force synchronous execution
+        expand_data: request.expand_data !== false, // Default to true
+        select_as_cta: false, // Disable CTA
         ctas_method: 'TABLE',
-        json: true, // 添加json参数
+        json: true, // Add json parameter
       };
-
-      console.log('执行SQL请求数据:', JSON.stringify(requestData, null, 2));
 
       const response = await this.makeProtectedRequest({
         method: 'POST',
@@ -472,13 +470,13 @@ export class SupersetClient {
 
       return response.data;
     } catch (error) {
-      console.error('执行SQL详细错误:', error);
+      console.error('Execute SQL detailed error:', error);
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any;
-        console.error('响应状态:', axiosError.response?.status);
-        console.error('响应数据:', JSON.stringify(axiosError.response?.data, null, 2));
+        console.error('Response status:', axiosError.response?.status);
+        console.error('Response data:', JSON.stringify(axiosError.response?.data, null, 2));
       }
-      throw new Error(`执行SQL失败: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to execute SQL: ${getErrorMessage(error)}`);
     }
   }
 } 

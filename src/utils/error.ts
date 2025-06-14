@@ -1,14 +1,14 @@
 import { AxiosError } from "axios";
 
-// 错误处理帮助函数
+// Error handling helper function
 export function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
-    // 尝试获取详细的错误信息
+    // Try to get detailed error information
     const response = error.response;
     if (response) {
-      // 如果有详细的错误信息
+      // If there's detailed error information
       if (response.data?.message) {
-        // 如果message是对象，尝试序列化
+        // If message is an object, try to serialize it
         if (typeof response.data.message === 'object') {
           try {
             const messageStr = JSON.stringify(response.data.message, null, 2);
@@ -19,14 +19,14 @@ export function getErrorMessage(error: unknown): string {
         }
         return `${response.status} ${response.statusText}: ${response.data.message}`;
       }
-      // 如果有错误数组
+      // If there's an error array
       if (response.data?.errors && Array.isArray(response.data.errors)) {
         const errorMessages = response.data.errors.map((err: any) => 
           typeof err === 'string' ? err : JSON.stringify(err)
         ).join(', ');
         return `${response.status} ${response.statusText}: ${errorMessages}`;
       }
-      // 如果有其他格式的错误信息，尝试序列化整个对象
+      // If there's other format error information, try to serialize the entire object
       if (response.data) {
         try {
           const dataStr = JSON.stringify(response.data, null, 2);
@@ -35,7 +35,7 @@ export function getErrorMessage(error: unknown): string {
           return `${response.status} ${response.statusText}: ${String(response.data)}`;
         }
       }
-      // 只有状态码信息
+      // Only status code information
       return `${response.status} ${response.statusText}`;
     }
     return error.message;

@@ -1,18 +1,18 @@
 export const toolDefinitions = [
   {
     name: "list_datasets",
-    description: "获取Superset中的所有datasets列表",
+    description: "Get list of all datasets in Superset",
     inputSchema: {
       type: "object",
       properties: {
         page: {
           type: "number",
-          description: "页码（从0开始）",
+          description: "Page number (starting from 0)",
           default: 0,
         },
         pageSize: {
           type: "number", 
-          description: "每页数量",
+          description: "Number of items per page",
           default: 20,
         },
       },
@@ -20,13 +20,13 @@ export const toolDefinitions = [
   },
   {
     name: "get_dataset",
-    description: "根据ID获取特定的dataset详细信息",
+    description: "Get detailed information of a specific dataset by ID",
     inputSchema: {
       type: "object",
       properties: {
         id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
       },
       required: ["id"],
@@ -34,29 +34,29 @@ export const toolDefinitions = [
   },
   {
     name: "create_dataset",
-    description: "创建新的dataset",
+    description: "Create a new dataset",
     inputSchema: {
       type: "object",
       properties: {
         database_id: {
           type: "number",
-          description: "数据库ID",
+          description: "Database ID",
         },
         table_name: {
           type: "string",
-          description: "表名",
+          description: "Table name",
         },
         schema: {
           type: "string",
-          description: "数据库schema（可选）",
+          description: "Database schema (optional)",
         },
         description: {
           type: "string",
-          description: "Dataset描述（可选）",
+          description: "Dataset description (optional)",
         },
         sql: {
           type: "string", 
-          description: "自定义SQL查询（可选）",
+          description: "Custom SQL query (optional)",
         },
       },
       required: ["database_id", "table_name"],
@@ -64,29 +64,29 @@ export const toolDefinitions = [
   },
   {
     name: "update_dataset",
-    description: "更新已存在的dataset",
+    description: "Update an existing dataset",
     inputSchema: {
       type: "object",
       properties: {
         id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
         table_name: {
           type: "string",
-          description: "表名（可选）",
+          description: "Table name (optional)",
         },
         description: {
           type: "string",
-          description: "Dataset描述（可选）",
+          description: "Dataset description (optional)",
         },
         sql: {
           type: "string",
-          description: "自定义SQL查询（可选）",
+          description: "Custom SQL query (optional)",
         },
         cache_timeout: {
           type: "number",
-          description: "缓存超时时间（秒）（可选）",
+          description: "Cache timeout in seconds (optional)",
         },
       },
       required: ["id"],
@@ -94,13 +94,13 @@ export const toolDefinitions = [
   },
   {
     name: "delete_dataset",
-    description: "删除dataset",
+    description: "Delete a dataset",
     inputSchema: {
       type: "object", 
       properties: {
         id: {
           type: "number",
-          description: "要删除的Dataset的ID",
+          description: "ID of the dataset to delete",
         },
       },
       required: ["id"],
@@ -108,13 +108,13 @@ export const toolDefinitions = [
   },
   {
     name: "refresh_dataset_schema",
-    description: "刷新dataset的schema信息",
+    description: "Refresh dataset schema information",
     inputSchema: {
       type: "object",
       properties: {
         id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
       },
       required: ["id"],
@@ -122,7 +122,7 @@ export const toolDefinitions = [
   },
   {
     name: "list_databases",
-    description: "获取Superset中配置的所有数据库",
+    description: "Get all databases configured in Superset",
     inputSchema: {
       type: "object",
       properties: {},
@@ -130,13 +130,13 @@ export const toolDefinitions = [
   },
   {
     name: "get_dataset_metrics",
-    description: "获取指定dataset的所有metrics",
+    description: "Get all metrics for a specified dataset",
     inputSchema: {
       type: "object",
       properties: {
         dataset_id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
       },
       required: ["dataset_id"],
@@ -144,37 +144,37 @@ export const toolDefinitions = [
   },
   {
     name: "create_dataset_metric",
-    description: "为dataset创建新的metric",
+    description: "Create a new metric for a dataset",
     inputSchema: {
       type: "object",
       properties: {
         dataset_id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
         metric_name: {
           type: "string",
-          description: "Metric名称",
+          description: "Metric name",
         },
         expression: {
           type: "string",
-          description: "Metric表达式（SQL表达式）",
+          description: "Metric expression (SQL expression)",
         },
         metric_type: {
           type: "string",
-          description: "Metric类型（可选）",
+          description: "Metric type (optional)",
         },
         description: {
           type: "string",
-          description: "Metric描述（可选）",
+          description: "Metric description (optional)",
         },
         verbose_name: {
           type: "string",
-          description: "Metric显示名称（可选）",
+          description: "Metric display name (optional)",
         },
         d3format: {
           type: "string",
-          description: "D3格式化字符串（可选）",
+          description: "D3 format string (optional)",
         },
       },
       required: ["dataset_id", "metric_name", "expression"],
@@ -182,37 +182,37 @@ export const toolDefinitions = [
   },
   {
     name: "update_dataset_metric",
-    description: "更新dataset中的metric",
+    description: "Update a metric in a dataset",
     inputSchema: {
       type: "object",
       properties: {
         dataset_id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
         metric_id: {
           type: "number",
-          description: "Metric的ID",
+          description: "Metric ID",
         },
         metric_name: {
           type: "string",
-          description: "Metric名称（可选）",
+          description: "Metric name (optional)",
         },
         expression: {
           type: "string",
-          description: "Metric表达式（可选）",
+          description: "Metric expression (optional)",
         },
         description: {
           type: "string",
-          description: "Metric描述（可选）",
+          description: "Metric description (optional)",
         },
         verbose_name: {
           type: "string",
-          description: "Metric显示名称（可选）",
+          description: "Metric display name (optional)",
         },
         d3format: {
           type: "string",
-          description: "D3格式化字符串（可选）",
+          description: "D3 format string (optional)",
         },
       },
       required: ["dataset_id", "metric_id"],
@@ -220,17 +220,17 @@ export const toolDefinitions = [
   },
   {
     name: "delete_dataset_metric",
-    description: "删除dataset中的metric",
+    description: "Delete a metric from a dataset",
     inputSchema: {
       type: "object",
       properties: {
         dataset_id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
         metric_id: {
           type: "number",
-          description: "要删除的Metric的ID",
+          description: "ID of the metric to delete",
         },
       },
       required: ["dataset_id", "metric_id"],
@@ -238,13 +238,13 @@ export const toolDefinitions = [
   },
   {
     name: "get_dataset_columns",
-    description: "获取dataset的字段信息，用于创建metrics时参考可用字段",
+    description: "Get column information of a dataset, useful for referencing available fields when creating metrics",
     inputSchema: {
       type: "object",
       properties: {
         dataset_id: {
           type: "number",
-          description: "Dataset的ID",
+          description: "Dataset ID",
         },
       },
       required: ["dataset_id"],
@@ -252,35 +252,35 @@ export const toolDefinitions = [
   },
   {
     name: "execute_sql",
-    description: "使用/api/v1/sqllab/execute/端点执行SQL查询",
+    description: "Execute SQL query using /api/v1/sqllab/execute/ endpoint",
     inputSchema: {
       type: "object",
       properties: {
         database_id: {
           type: "number",
-          description: "数据库ID",
+          description: "Database ID",
         },
         sql: {
           type: "string",
-          description: "要执行的SQL查询语句",
+          description: "SQL query statement to execute",
         },
         schema: {
           type: "string",
-          description: "数据库schema（可选）",
+          description: "Database schema (optional)",
         },
         limit: {
           type: "number",
-          description: "查询结果行数限制（默认1000）",
+          description: "Query result row limit (default 1000)",
           default: 1000,
         },
         expand_data: {
           type: "boolean",
-          description: "是否展开数据（默认true）",
+          description: "Whether to expand data (default true)",
           default: true,
         },
         display_rows: {
           type: "number",
-          description: "显示的数据行数（默认10）",
+          description: "Number of data rows to display (default 10)",
           default: 10,
         },
       },

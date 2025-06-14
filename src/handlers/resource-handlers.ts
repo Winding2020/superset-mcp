@@ -10,14 +10,14 @@ export async function handleResourceRead(request: any) {
     switch (request.params.uri) {
       case "superset://datasets": {
         const result = await client.getDatasets(0, 50);
-        const content = `Superset Datasets概览\n` +
+        const content = `Superset Datasets Overview\n` +
           `========================\n\n` +
-          `总数: ${result.count}\n\n` +
+          `Total: ${result.count}\n\n` +
           result.result.map(dataset => 
             `• ${dataset.table_name} (ID: ${dataset.id})\n` +
-            `  数据库ID: ${dataset.database_id}\n` +
+            `  Database ID: ${dataset.database_id}\n` +
             `  Schema: ${dataset.schema || 'N/A'}\n` +
-            `  描述: ${dataset.description || 'N/A'}\n`
+            `  Description: ${dataset.description || 'N/A'}\n`
           ).join('\n');
         
         return {
@@ -33,13 +33,13 @@ export async function handleResourceRead(request: any) {
       
       case "superset://databases": {
         const databases = await client.getDatabases();
-        const content = `Superset数据库连接\n` +
+        const content = `Superset Database Connections\n` +
           `===================\n\n` +
-          `总数: ${databases.length}\n\n` +
+          `Total: ${databases.length}\n\n` +
           databases.map(db => 
             `• ${db.database_name} (ID: ${db.id})\n` +
-            `  驱动: ${db.sqlalchemy_uri?.split('://')[0] || 'N/A'}\n` +
-            `  是否可连接: ${db.allow_run_async ? '是' : '否'}\n`
+            `  Driver: ${db.sqlalchemy_uri?.split('://')[0] || 'N/A'}\n` +
+            `  Allows async: ${db.allow_run_async ? 'Yes' : 'No'}\n`
           ).join('\n');
         
         return {
@@ -57,7 +57,7 @@ export async function handleResourceRead(request: any) {
         const datasetsResult = await client.getDatasets(0, 100);
         let allMetrics: Array<{datasetId: number, datasetName: string, metrics: DatasetMetric[]}> = [];
         
-        // 获取所有datasets的metrics
+        // Get metrics for all datasets
         for (const dataset of datasetsResult.result) {
           try {
             const metrics = await client.getDatasetMetrics(dataset.id);
@@ -69,25 +69,25 @@ export async function handleResourceRead(request: any) {
               });
             }
           } catch (error) {
-            // 忽略单个dataset的错误，继续处理其他datasets
-            console.error(`获取dataset ${dataset.id} metrics失败:`, error);
+            // Ignore errors for individual datasets, continue processing others
+            console.error(`Failed to get metrics for dataset ${dataset.id}:`, error);
           }
         }
         
         const totalMetrics = allMetrics.reduce((sum, item) => sum + item.metrics.length, 0);
         
-        const content = `Dataset Metrics概览\n` +
+        const content = `Dataset Metrics Overview\n` +
           `====================\n\n` +
-          `总metrics数: ${totalMetrics}\n` +
-          `包含metrics的datasets数: ${allMetrics.length}\n\n` +
+          `Total metrics: ${totalMetrics}\n` +
+          `Datasets with metrics: ${allMetrics.length}\n\n` +
           allMetrics.map(item => 
             `Dataset: ${item.datasetName} (ID: ${item.datasetId})\n` +
-            `Metrics数量: ${item.metrics.length}\n` +
+            `Metrics count: ${item.metrics.length}\n` +
             item.metrics.map(metric => 
               `  • ${metric.metric_name} (ID: ${metric.id})\n` +
-              `    表达式: ${metric.expression}\n` +
-              `    类型: ${metric.metric_type || 'N/A'}\n` +
-              `    描述: ${metric.description || 'N/A'}\n`
+              `    Expression: ${metric.expression}\n` +
+              `    Type: ${metric.metric_type || 'N/A'}\n` +
+              `    Description: ${metric.description || 'N/A'}\n`
             ).join('') +
             `\n`
           ).join('');
@@ -104,9 +104,9 @@ export async function handleResourceRead(request: any) {
       }
       
       default:
-        throw new Error(`未知资源: ${request.params.uri}`);
+        throw new Error(`Unknown resource: ${request.params.uri}`);
     }
   } catch (error) {
-    throw new Error(`读取资源失败: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to read resource: ${getErrorMessage(error)}`);
   }
 } 
