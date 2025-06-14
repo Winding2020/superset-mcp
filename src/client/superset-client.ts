@@ -53,7 +53,7 @@ export class SupersetClient {
       const response = await this.api.post('/api/v1/security/login', {
         username: this.config.username,
         password: this.config.password,
-        provider: 'db',
+        provider: this.config.authProvider || 'db',
         refresh: true,
       });
 

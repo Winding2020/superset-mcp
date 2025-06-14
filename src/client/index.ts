@@ -12,6 +12,7 @@ export function initializeSupersetClient(): SupersetClient {
       username: process.env.SUPERSET_USERNAME,
       password: process.env.SUPERSET_PASSWORD,
       accessToken: process.env.SUPERSET_ACCESS_TOKEN,
+      authProvider: process.env.SUPERSET_AUTH_PROVIDER,
     };
     
     supersetClient = new SupersetClient(config);

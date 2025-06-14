@@ -4,6 +4,7 @@ export interface SupersetConfig {
   username?: string;
   password?: string;
   accessToken?: string;
+  authProvider?: string; // 认证提供者，默认为'db'，可选值: 'db', 'ldap', 'oauth'等
 }
 
 // Dataset数据结构

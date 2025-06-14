@@ -36,6 +36,8 @@ export SUPERSET_USERNAME="your_username"
 export SUPERSET_PASSWORD="your_password"
 # 或者使用访问令牌
 export SUPERSET_ACCESS_TOKEN="your_access_token"
+# 认证提供者（可选，默认为'db'）
+export SUPERSET_AUTH_PROVIDER="db"  # 可选值: db, ldap, oauth等
 ```
 
 ### 构建和运行
