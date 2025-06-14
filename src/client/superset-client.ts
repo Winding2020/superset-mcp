@@ -449,17 +449,17 @@ export class SupersetClient {
   // 执行SQL查询
   async executeSql(request: SqlExecuteRequest): Promise<SqlExecuteResponse> {
     try {
-      // 构建请求数据，强制设置为同步执行，禁用CTA
+      // 构建请求数据，使用正确的API参数名
       const requestData = {
         database_id: request.database_id,
         sql: request.sql,
         schema: request.schema,
-        limit: request.limit || 1000,
-        async: false, // 强制同步执行
+        queryLimit: request.limit || 1000, // 使用queryLimit而不是limit
+        runAsync: false, // 使用runAsync而不是async，强制同步执行
         expand_data: request.expand_data !== false, // 默认为true
         select_as_cta: false, // 禁用CTA
         ctas_method: 'TABLE',
-        tmp_table_name: undefined,
+        json: true, // 添加json参数
       };
 
       console.log('执行SQL请求数据:', JSON.stringify(requestData, null, 2));

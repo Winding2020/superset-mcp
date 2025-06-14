@@ -278,6 +278,11 @@ export const toolDefinitions = [
           description: "是否展开数据（默认true）",
           default: true,
         },
+        display_rows: {
+          type: "number",
+          description: "显示的数据行数（默认10）",
+          default: 10,
+        },
       },
       required: ["database_id", "sql"],
     },

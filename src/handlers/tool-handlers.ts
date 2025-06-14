@@ -236,7 +236,7 @@ export async function handleToolCall(request: any) {
       }
       
       case "execute_sql": {
-        const { database_id, sql, schema, limit, expand_data } = request.params.arguments as any;
+        const { database_id, sql, schema, limit, expand_data, display_rows = 10 } = request.params.arguments as any;
         const sqlRequest = {
           database_id,
           sql,
@@ -256,12 +256,9 @@ export async function handleToolCall(request: any) {
         }
         
         if (result.query) {
-          responseText += `执行的SQL: ${result.query.executedSql}\n`;
-          responseText += `数据库: ${result.query.db}\n`;
           responseText += `Schema: ${result.query.schema || 'N/A'}\n`;
           responseText += `返回行数: ${result.query.rows}\n`;
           responseText += `执行状态: ${result.query.state}\n`;
-          responseText += `进度: ${result.query.progress}%\n`;
           
           if (result.query.errorMessage) {
             responseText += `错误信息: ${result.query.errorMessage}\n`;
@@ -276,8 +273,9 @@ export async function handleToolCall(request: any) {
         }
         
         if (result.data && result.data.length > 0) {
-          responseText += `\n数据预览 (前10行):\n`;
-          const previewData = result.data.slice(0, 10);
+          const displayRowCount = Math.max(1, Math.min(display_rows, result.data.length));
+          responseText += `\n数据预览 (前${displayRowCount}行):\n`;
+          const previewData = result.data.slice(0, displayRowCount);
           
           // 创建表格格式的输出
           if (result.columns && result.columns.length > 0) {
@@ -299,8 +297,8 @@ export async function handleToolCall(request: any) {
             responseText += JSON.stringify(previewData, null, 2);
           }
           
-          if (result.data.length > 10) {
-            responseText += `\n... 还有 ${result.data.length - 10} 行数据\n`;
+          if (result.data.length > displayRowCount) {
+            responseText += `\n... 还有 ${result.data.length - displayRowCount} 行数据\n`;
           }
         }
         
