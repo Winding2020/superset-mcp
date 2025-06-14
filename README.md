@@ -18,6 +18,11 @@
 - 更新现有metric
 - 删除metric
 
+### SQL查询执行 🚀 新功能
+- 使用/api/v1/sqllab/execute/端点执行SQL查询
+- 支持同步执行
+- 支持结果限制和数据展开
+
 ### 数据库管理
 - 列出所有数据库连接
 
@@ -58,6 +63,9 @@ node build/index.js
 - `delete_dataset_metric` - 删除dataset中的metric
 - `get_dataset_columns` - 获取dataset的字段信息（创建metrics时参考）
 
+### SQL查询工具 🚀 新功能
+- `execute_sql` - 使用/api/v1/sqllab/execute/端点执行SQL查询
+
 ### 数据库工具
 - `list_databases` - 获取数据库列表
 
@@ -66,6 +74,40 @@ node build/index.js
 - `superset://datasets` - Superset Datasets概览
 - `superset://databases` - Superset数据库列表
 - `superset://dataset-metrics` - Dataset Metrics概览 ✨ 新功能
+
+## SQL查询执行使用示例 🚀 新功能
+
+### 基本SQL查询
+```json
+{
+  "tool": "execute_sql",
+  "arguments": {
+    "database_id": 1,
+    "sql": "SELECT * FROM sales LIMIT 10"
+  }
+}
+```
+
+### 带schema的查询
+```json
+{
+  "tool": "execute_sql",
+  "arguments": {
+    "database_id": 1,
+    "sql": "SELECT COUNT(*) as total_records FROM public.users",
+    "schema": "public",
+    "limit": 1000
+  }
+}
+```
+
+## SQL执行参数说明
+
+- `database_id` - 数据库ID（必需）
+- `sql` - 要执行的SQL查询语句（必需）
+- `schema` - 数据库schema（可选）
+- `limit` - 查询结果行数限制（默认1000）
+- `expand_data` - 是否展开数据（默认true）
 
 ## Dataset Metrics使用示例
 
@@ -156,4 +198,4 @@ MIT License
 
 - [Apache Superset](https://superset.apache.org/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) 
+- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)

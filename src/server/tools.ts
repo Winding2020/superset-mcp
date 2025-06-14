@@ -250,4 +250,36 @@ export const toolDefinitions = [
       required: ["dataset_id"],
     },
   },
+  {
+    name: "execute_sql",
+    description: "使用/api/v1/sqllab/execute/端点执行SQL查询",
+    inputSchema: {
+      type: "object",
+      properties: {
+        database_id: {
+          type: "number",
+          description: "数据库ID",
+        },
+        sql: {
+          type: "string",
+          description: "要执行的SQL查询语句",
+        },
+        schema: {
+          type: "string",
+          description: "数据库schema（可选）",
+        },
+        limit: {
+          type: "number",
+          description: "查询结果行数限制（默认1000）",
+          default: 1000,
+        },
+        expand_data: {
+          type: "boolean",
+          description: "是否展开数据（默认true）",
+          default: true,
+        },
+      },
+      required: ["database_id", "sql"],
+    },
+  },
 ]; 

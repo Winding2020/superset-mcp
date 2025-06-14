@@ -235,6 +235,89 @@ export async function handleToolCall(request: any) {
         };
       }
       
+      case "execute_sql": {
+        const { database_id, sql, schema, limit, expand_data } = request.params.arguments as any;
+        const sqlRequest = {
+          database_id,
+          sql,
+          schema,
+          limit,
+          expand_data,
+        };
+        
+        const result = await client.executeSql(sqlRequest);
+        
+        // 格式化响应
+        let responseText = `SQL执行结果:\n\n`;
+        responseText += `状态: ${result.status}\n`;
+        
+        if (result.query_id) {
+          responseText += `查询ID: ${result.query_id}\n`;
+        }
+        
+        if (result.query) {
+          responseText += `执行的SQL: ${result.query.executedSql}\n`;
+          responseText += `数据库: ${result.query.db}\n`;
+          responseText += `Schema: ${result.query.schema || 'N/A'}\n`;
+          responseText += `返回行数: ${result.query.rows}\n`;
+          responseText += `执行状态: ${result.query.state}\n`;
+          responseText += `进度: ${result.query.progress}%\n`;
+          
+          if (result.query.errorMessage) {
+            responseText += `错误信息: ${result.query.errorMessage}\n`;
+          }
+        }
+        
+        if (result.columns && result.columns.length > 0) {
+          responseText += `\n列信息:\n`;
+          result.columns.forEach(col => {
+            responseText += `• ${col.name} (${col.type})\n`;
+          });
+        }
+        
+        if (result.data && result.data.length > 0) {
+          responseText += `\n数据预览 (前10行):\n`;
+          const previewData = result.data.slice(0, 10);
+          
+          // 创建表格格式的输出
+          if (result.columns && result.columns.length > 0) {
+            // 表头
+            const headers = result.columns.map(col => col.name);
+            responseText += headers.join(' | ') + '\n';
+            responseText += headers.map(() => '---').join(' | ') + '\n';
+            
+            // 数据行
+            previewData.forEach(row => {
+              const values = headers.map(header => {
+                const value = row[header];
+                return value !== null && value !== undefined ? String(value) : 'NULL';
+              });
+              responseText += values.join(' | ') + '\n';
+            });
+          } else {
+            // 如果没有列信息，直接显示JSON
+            responseText += JSON.stringify(previewData, null, 2);
+          }
+          
+          if (result.data.length > 10) {
+            responseText += `\n... 还有 ${result.data.length - 10} 行数据\n`;
+          }
+        }
+        
+        if (result.error) {
+          responseText += `\n错误: ${result.error}\n`;
+        }
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText
+            },
+          ],
+        };
+      }
+      
       default:
         throw new Error(`未知工具: ${request.params.name}`);
     }

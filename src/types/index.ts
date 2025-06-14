@@ -47,6 +47,60 @@ export interface DatasetColumn {
   verbose_name?: string;
 }
 
+// SQL执行请求参数
+export interface SqlExecuteRequest {
+  database_id: number;
+  sql: string;
+  schema?: string;
+  limit?: number;
+  expand_data?: boolean;
+}
+
+// SQL执行响应
+export interface SqlExecuteResponse {
+  query_id?: number;
+  status: string;
+  data?: Array<Record<string, any>>;
+  columns?: Array<{
+    name: string;
+    type: string;
+    is_date?: boolean;
+  }>;
+  selected_columns?: Array<{
+    name: string;
+    type: string;
+  }>;
+  expanded_columns?: Array<{
+    name: string;
+    type: string;
+  }>;
+  query?: {
+    changedOn: string;
+    changed_on: string;
+    dbId: number;
+    db: string;
+    endDttm: number;
+    errorMessage?: string;
+    executedSql: string;
+    id: string;
+    limit: number;
+    limitingFactor: string;
+    progress: number;
+    rows: number;
+    schema: string;
+    sql: string;
+    sqlEditorId: string;
+    startDttm: number;
+    state: string;
+    tab: string;
+    tempSchema?: string;
+    tempTable?: string;
+    userId: number;
+    user: string;
+  };
+  error?: string;
+}
+
 // API响应类型
 export interface DatasetListResponse {
   result: Dataset[];

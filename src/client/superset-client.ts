@@ -5,7 +5,9 @@ import {
   DatasetMetric, 
   DatasetColumn, 
   DatasetListResponse, 
-  CsrfTokenResponse 
+  CsrfTokenResponse,
+  SqlExecuteRequest,
+  SqlExecuteResponse
 } from "../types/index.js";
 import { getErrorMessage } from "../utils/error.js";
 
@@ -441,6 +443,42 @@ export class SupersetClient {
       }));
     } catch (error) {
       throw new Error(`获取dataset ${datasetId} 字段信息失败: ${getErrorMessage(error)}`);
+    }
+  }
+
+  // 执行SQL查询
+  async executeSql(request: SqlExecuteRequest): Promise<SqlExecuteResponse> {
+    try {
+      // 构建请求数据，强制设置为同步执行，禁用CTA
+      const requestData = {
+        database_id: request.database_id,
+        sql: request.sql,
+        schema: request.schema,
+        limit: request.limit || 1000,
+        async: false, // 强制同步执行
+        expand_data: request.expand_data !== false, // 默认为true
+        select_as_cta: false, // 禁用CTA
+        ctas_method: 'TABLE',
+        tmp_table_name: undefined,
+      };
+
+      console.log('执行SQL请求数据:', JSON.stringify(requestData, null, 2));
+
+      const response = await this.makeProtectedRequest({
+        method: 'POST',
+        url: '/api/v1/sqllab/execute/',
+        data: requestData
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('执行SQL详细错误:', error);
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as any;
+        console.error('响应状态:', axiosError.response?.status);
+        console.error('响应数据:', JSON.stringify(axiosError.response?.data, null, 2));
+      }
+      throw new Error(`执行SQL失败: ${getErrorMessage(error)}`);
     }
   }
 } 
