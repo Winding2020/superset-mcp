@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server for managing Apache Superset datasets, metrics, and SQL queries.
 
+> 📖 [中文文档](README_zh.md)
+
 ## 🚀 Features
 
 - **Dataset Management**: Full CRUD operations for Superset datasets
