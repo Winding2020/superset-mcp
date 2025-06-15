@@ -320,11 +320,14 @@ export async function handleToolCall(request: any) {
         throw new Error(`Unknown tool: ${request.params.name}`);
     }
   } catch (error) {
+    const errorMessage = getErrorMessage(error);
+    console.error(`Tool ${request.params.name} failed:`, errorMessage);
+    
     return {
       content: [
         {
           type: "text",
-          text: `Error: ${getErrorMessage(error)}`,
+          text: errorMessage,
         },
       ],
       isError: true,

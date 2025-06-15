@@ -15,6 +15,7 @@ import { toolDefinitions } from "./server/tools.js";
 import { resourceDefinitions } from "./server/resources.js";
 import { handleToolCall } from "./handlers/tool-handlers.js";
 import { handleResourceRead } from "./handlers/resource-handlers.js";
+import { getErrorMessage } from "./utils/error.js";
 
 // Create MCP server
 const server = new Server({
@@ -37,9 +38,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Tool execution handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
-    return await handleToolCall(request);
+    const result = await handleToolCall(request);
+    
+    // If the handler returned an error result, throw it as McpError
+    if (result.isError) {
+      const errorMessage = result.content?.[0]?.text || 'Unknown error occurred';
+      console.error(`Tool execution failed for ${request.params.name}:`, errorMessage);
+      throw new McpError(ErrorCode.InternalError, errorMessage);
+    }
+    
+    return result;
   } catch (error) {
-    throw new McpError(ErrorCode.InternalError, `Tool execution failed: ${error}`);
+    // If it's already an McpError, re-throw it directly
+    if (error instanceof McpError) {
+      throw error;
+    }
+    
+    // Get detailed error message for other errors
+    const errorMessage = getErrorMessage(error);
+    console.error(`Tool execution failed for ${request.params.name}:`, errorMessage);
+    throw new McpError(ErrorCode.InternalError, errorMessage);
   }
 });
 
@@ -55,7 +73,9 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   try {
     return await handleResourceRead(request);
   } catch (error) {
-    throw new McpError(ErrorCode.InternalError, `Resource read failed: ${error}`);
+    const errorMessage = getErrorMessage(error);
+    console.error(`Resource read failed for ${request.params.uri}:`, errorMessage);
+    throw new McpError(ErrorCode.InternalError, errorMessage);
   }
 });
 
@@ -66,6 +86,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("Server startup failed:", error);
+  console.error("Server startup failed:", getErrorMessage(error));
   process.exit(1);
 }); 

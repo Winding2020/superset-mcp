@@ -29,6 +29,23 @@ export class SupersetClient {
         'Content-Type': 'application/json',
       },
       withCredentials: true, // Enable cookie support to maintain session
+      // Prevent axios from automatically parsing JSON to handle non-JSON responses gracefully
+      transformResponse: [(data, headers) => {
+        const contentType = headers['content-type'] || '';
+        
+        // If response is JSON, parse it
+        if (contentType.includes('application/json')) {
+          try {
+            return JSON.parse(data);
+          } catch (e) {
+            // If JSON parsing fails, return raw data
+            return data;
+          }
+        }
+        
+        // For non-JSON responses, return raw data
+        return data;
+      }],
     });
 
     // Request interceptor: add authentication token
@@ -39,9 +56,20 @@ export class SupersetClient {
       return config;
     });
 
-    // Response interceptor: handle token expiration
+    // Response interceptor: handle token expiration and response validation
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Validate that we got the expected JSON response for API calls
+        const contentType = response.headers['content-type'] || '';
+        const isApiCall = response.config.url?.includes('/api/');
+        
+        if (isApiCall && !contentType.includes('application/json')) {
+          // Log warning for non-JSON API responses
+          console.warn(`API call returned non-JSON response: ${response.config.url}, Content-Type: ${contentType}`);
+        }
+        
+        return response;
+      },
       async (error) => {
         const originalRequest = error.config;
         
@@ -99,7 +127,6 @@ export class SupersetClient {
 
   // Perform token refresh
   private async performTokenRefresh(): Promise<void> {
-    console.log('Token expired, attempting to refresh...');
     
     // Clear current authentication state
     this.isAuthenticated = false;
@@ -108,7 +135,6 @@ export class SupersetClient {
     // Re-authenticate
     await this.authenticate();
     
-    console.log('Token refreshed successfully');
   }
 
   // Clear authentication state
@@ -129,7 +155,6 @@ export class SupersetClient {
     }
 
     try {
-      console.log('Authenticating with Superset...');
       const response = await this.api.post('/api/v1/security/login', {
         username: this.config.username,
         password: this.config.password,
@@ -139,10 +164,10 @@ export class SupersetClient {
 
       this.config.accessToken = response.data.access_token;
       this.isAuthenticated = true;
-      console.log('Authentication successful');
     } catch (error) {
-      console.error('Authentication failed:', getErrorMessage(error));
-      throw new Error(`Authentication failed: ${getErrorMessage(error)}`);
+      const errorMessage = getErrorMessage(error);
+      console.error('Authentication failed:', errorMessage);
+      throw new Error(errorMessage);
     }
   }
 
