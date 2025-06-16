@@ -24,7 +24,7 @@ export class SupersetClient {
     this.config = config;
     this.api = axios.create({
       baseURL: config.baseUrl,
-      timeout: 30000,
+      timeout: 120000,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -213,7 +213,7 @@ export class SupersetClient {
     // Create a new axios instance to handle this specific request
     const protectedApi = axios.create({
       baseURL: this.config.baseUrl,
-      timeout: 30000,
+      timeout: 120000,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.accessToken}`,
