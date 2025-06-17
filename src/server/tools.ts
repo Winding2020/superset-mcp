@@ -287,4 +287,150 @@ export const toolDefinitions = [
       required: ["database_id", "sql"],
     },
   },
+  {
+    name: "create_calculated_column",
+    description: "Create a new calculated column for a dataset",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dataset_id: {
+          type: "number",
+          description: "Dataset ID",
+        },
+        column_name: {
+          type: "string",
+          description: "Column name",
+        },
+        expression: {
+          type: "string",
+          description: "SQL expression for the calculated column",
+        },
+        type: {
+          type: "string",
+          description: "Data type (optional, e.g., 'VARCHAR', 'NUMERIC', 'TIMESTAMP')",
+        },
+        description: {
+          type: "string",
+          description: "Column description (optional)",
+        },
+        verbose_name: {
+          type: "string",
+          description: "Column display name (optional)",
+        },
+        filterable: {
+          type: "boolean",
+          description: "Whether the column can be used for filtering (optional, default: true)",
+        },
+        groupby: {
+          type: "boolean",
+          description: "Whether the column can be used for grouping (optional, default: true)",
+        },
+        is_dttm: {
+          type: "boolean",
+          description: "Whether this is a datetime column (optional, default: false)",
+        },
+        is_active: {
+          type: "boolean",
+          description: "Whether the column is active (optional, default: true)",
+        },
+        extra: {
+          type: "string",
+          description: "Extra configuration in JSON format (optional)",
+        },
+        advanced_data_type: {
+          type: "string",
+          description: "Advanced data type (optional)",
+        },
+        python_date_format: {
+          type: "string",
+          description: "Python date format for datetime columns (optional)",
+        },
+      },
+      required: ["dataset_id", "column_name", "expression"],
+    },
+  },
+  {
+    name: "update_calculated_column",
+    description: "Update an existing calculated column in a dataset",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dataset_id: {
+          type: "number",
+          description: "Dataset ID",
+        },
+        column_id: {
+          type: "number",
+          description: "Column ID",
+        },
+        column_name: {
+          type: "string",
+          description: "Column name (optional)",
+        },
+        expression: {
+          type: "string",
+          description: "SQL expression for the calculated column (optional)",
+        },
+        type: {
+          type: "string",
+          description: "Data type (optional)",
+        },
+        description: {
+          type: "string",
+          description: "Column description (optional)",
+        },
+        verbose_name: {
+          type: "string",
+          description: "Column display name (optional)",
+        },
+        filterable: {
+          type: "boolean",
+          description: "Whether the column can be used for filtering (optional)",
+        },
+        groupby: {
+          type: "boolean",
+          description: "Whether the column can be used for grouping (optional)",
+        },
+        is_dttm: {
+          type: "boolean",
+          description: "Whether this is a datetime column (optional)",
+        },
+        is_active: {
+          type: "boolean",
+          description: "Whether the column is active (optional)",
+        },
+        extra: {
+          type: "string",
+          description: "Extra configuration in JSON format (optional)",
+        },
+        advanced_data_type: {
+          type: "string",
+          description: "Advanced data type (optional)",
+        },
+        python_date_format: {
+          type: "string",
+          description: "Python date format for datetime columns (optional)",
+        },
+      },
+      required: ["dataset_id", "column_id"],
+    },
+  },
+  {
+    name: "delete_calculated_column",
+    description: "Delete a calculated column from a dataset",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dataset_id: {
+          type: "number",
+          description: "Dataset ID",
+        },
+        column_id: {
+          type: "number",
+          description: "ID of the column to delete",
+        },
+      },
+      required: ["dataset_id", "column_id"],
+    },
+  },
 ]; 

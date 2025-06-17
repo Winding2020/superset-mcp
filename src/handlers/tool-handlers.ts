@@ -10,7 +10,7 @@ export async function handleToolCall(request: any) {
     switch (request.params.name) {
       case "list_datasets": {
         const { page = 0, pageSize = 20 } = request.params.arguments as any;
-        const result = await client.getDatasets(page, pageSize);
+        const result = await client.datasets.getDatasets(page, pageSize);
         
         return {
           content: [
@@ -32,7 +32,7 @@ export async function handleToolCall(request: any) {
       
       case "get_dataset": {
         const { id } = request.params.arguments as any;
-        const dataset = await client.getDataset(id);
+        const dataset = await client.datasets.getDataset(id);
         
         return {
           content: [
@@ -55,7 +55,7 @@ export async function handleToolCall(request: any) {
       
       case "create_dataset": {
         const datasetData = request.params.arguments as any;
-        const newDataset = await client.createDataset(datasetData);
+        const newDataset = await client.datasets.createDataset(datasetData);
         
         return {
           content: [
@@ -73,7 +73,7 @@ export async function handleToolCall(request: any) {
       
       case "update_dataset": {
         const { id, ...updateData } = request.params.arguments as any;
-        const updatedDataset = await client.updateDataset(id, updateData);
+        const updatedDataset = await client.datasets.updateDataset(id, updateData);
         
         return {
           content: [
@@ -90,7 +90,7 @@ export async function handleToolCall(request: any) {
       
       case "delete_dataset": {
         const { id } = request.params.arguments as any;
-        await client.deleteDataset(id);
+        await client.datasets.deleteDataset(id);
         
         return {
           content: [
@@ -104,7 +104,7 @@ export async function handleToolCall(request: any) {
       
       case "refresh_dataset_schema": {
         const { id } = request.params.arguments as any;
-        const result = await client.refreshDatasetSchema(id);
+        const result = await client.datasets.refreshDatasetSchema(id);
         
         return {
           content: [
@@ -117,7 +117,7 @@ export async function handleToolCall(request: any) {
       }
       
       case "list_databases": {
-        const databases = await client.getDatabases();
+        const databases = await client.sql.getDatabases();
         
         return {
           content: [
@@ -137,7 +137,7 @@ export async function handleToolCall(request: any) {
       
       case "get_dataset_metrics": {
         const { dataset_id } = request.params.arguments as any;
-        const metrics = await client.getDatasetMetrics(dataset_id);
+        const metrics = await client.metrics.getDatasetMetrics(dataset_id);
         
         return {
           content: [
@@ -160,7 +160,7 @@ export async function handleToolCall(request: any) {
       case "create_dataset_metric": {
         const { dataset_id, metric_name, expression, metric_type, description, verbose_name, d3format } = request.params.arguments as any;
         const metric = { metric_name, expression, metric_type, description, verbose_name, d3format };
-        const newMetric = await client.createDatasetMetric(dataset_id, metric);
+        const newMetric = await client.metrics.createDatasetMetric(dataset_id, metric);
         
         return {
           content: [
@@ -182,7 +182,7 @@ export async function handleToolCall(request: any) {
       case "update_dataset_metric": {
         const { dataset_id, metric_id, metric_name, expression, description, verbose_name, d3format } = request.params.arguments as any;
         const metric = { metric_name, expression, description, verbose_name, d3format };
-        const updatedMetric = await client.updateDatasetMetric(dataset_id, metric_id, metric);
+        const updatedMetric = await client.metrics.updateDatasetMetric(dataset_id, metric_id, metric);
         
         return {
           content: [
@@ -202,7 +202,7 @@ export async function handleToolCall(request: any) {
       
       case "delete_dataset_metric": {
         const { dataset_id, metric_id } = request.params.arguments as any;
-        await client.deleteDatasetMetric(dataset_id, metric_id);
+        await client.metrics.deleteDatasetMetric(dataset_id, metric_id);
         
         return {
           content: [
@@ -216,20 +216,48 @@ export async function handleToolCall(request: any) {
       
       case "get_dataset_columns": {
         const { dataset_id } = request.params.arguments as any;
-        const columns = await client.getDatasetColumns(dataset_id);
+        const columns = await client.columns.getDatasetColumns(dataset_id);
+        
+        // Separate physical and calculated columns
+        const physicalColumns = columns.filter(col => !col.expression);
+        const calculatedColumns = columns.filter(col => col.expression);
+        
+        let responseText = `Dataset ${dataset_id} column information:\n\n`;
+        
+        if (physicalColumns.length > 0) {
+          responseText += `Physical Columns (${physicalColumns.length}):\n`;
+          responseText += physicalColumns.map(col => 
+            `- ${col.column_name} (ID: ${col.id}) - Type: ${col.type || 'N/A'}\n` +
+            `  Description: ${col.description || 'N/A'}\n` +
+            `  Is DateTime: ${col.is_dttm ? 'Yes' : 'No'}\n` +
+            `  Display Name: ${col.verbose_name || 'N/A'}\n` +
+            `  Filterable: ${col.filterable ? 'Yes' : 'No'}\n` +
+            `  Groupable: ${col.groupby ? 'Yes' : 'No'}\n` +
+            `  Active: ${col.is_active ? 'Yes' : 'No'}\n`
+          ).join('\n') + '\n';
+        }
+        
+        if (calculatedColumns.length > 0) {
+          responseText += `Calculated Columns (${calculatedColumns.length}):\n`;
+          responseText += calculatedColumns.map(col => 
+            `- ${col.column_name} (ID: ${col.id}) - Type: ${col.type || 'N/A'}\n` +
+            `  Expression: ${col.expression}\n` +
+            `  Description: ${col.description || 'N/A'}\n` +
+            `  Is DateTime: ${col.is_dttm ? 'Yes' : 'No'}\n` +
+            `  Display Name: ${col.verbose_name || 'N/A'}\n` +
+            `  Filterable: ${col.filterable ? 'Yes' : 'No'}\n` +
+            `  Groupable: ${col.groupby ? 'Yes' : 'No'}\n` +
+            `  Active: ${col.is_active ? 'Yes' : 'No'}\n`
+          ).join('\n');
+        } else {
+          responseText += `Calculated Columns: None\n`;
+        }
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} column information:\n\n` +
-                columns.map(col => 
-                  `• ${col.column_name} (Type: ${col.type})\n` +
-                  `  Description: ${col.description || 'N/A'}\n` +
-                  `  is_dttm: ${col.is_dttm ? 'Yes' : 'No'}\n` +
-                  `  Expression: ${col.expression || 'N/A'}\n` +
-                  `  Display Name: ${col.verbose_name || 'N/A'}\n`
-                ).join('\n')
+              text: responseText
             },
           ],
         };
@@ -245,7 +273,7 @@ export async function handleToolCall(request: any) {
           expand_data,
         };
         
-        const result = await client.executeSql(sqlRequest);
+        const result = await client.sql.executeSql(sqlRequest);
         
         // Format response
         let responseText = `SQL execution result:\n\n`;
@@ -311,6 +339,128 @@ export async function handleToolCall(request: any) {
             {
               type: "text",
               text: responseText
+            },
+          ],
+        };
+      }
+
+      case "create_calculated_column": {
+        const { 
+          dataset_id, 
+          column_name, 
+          expression, 
+          type,
+          description, 
+          verbose_name, 
+          filterable,
+          groupby,
+          is_dttm,
+          is_active,
+          extra,
+          advanced_data_type,
+          python_date_format
+        } = request.params.arguments as any;
+        
+        const column = { 
+          column_name, 
+          expression, 
+          type,
+          description, 
+          verbose_name, 
+          filterable,
+          groupby,
+          is_dttm,
+          is_active,
+          extra,
+          advanced_data_type,
+          python_date_format
+        };
+        
+        const newColumn = await client.columns.createCalculatedColumn(dataset_id, column);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Dataset ${dataset_id} calculated column created successfully!\n\n` +
+                `ID: ${newColumn.id}\n` +
+                `Name: ${newColumn.column_name}\n` +
+                `Expression: ${newColumn.expression}\n` +
+                `Type: ${newColumn.type || 'N/A'}\n` +
+                `Description: ${newColumn.description || 'N/A'}\n` +
+                `Display Name: ${newColumn.verbose_name || 'N/A'}\n` +
+                `Filterable: ${newColumn.filterable ? 'Yes' : 'No'}\n` +
+                `Groupable: ${newColumn.groupby ? 'Yes' : 'No'}\n` +
+                `Is DateTime: ${newColumn.is_dttm ? 'Yes' : 'No'}\n` +
+                `Active: ${newColumn.is_active ? 'Yes' : 'No'}`
+            },
+          ],
+        };
+      }
+
+      case "update_calculated_column": {
+        const { 
+          dataset_id, 
+          column_id,
+          column_name, 
+          expression, 
+          type,
+          description, 
+          verbose_name, 
+          filterable,
+          groupby,
+          is_dttm,
+          is_active,
+          extra,
+          advanced_data_type,
+          python_date_format
+        } = request.params.arguments as any;
+        
+        const column = { 
+          column_name, 
+          expression, 
+          type,
+          description, 
+          verbose_name, 
+          filterable,
+          groupby,
+          is_dttm,
+          is_active,
+          extra,
+          advanced_data_type,
+          python_date_format
+        };
+        
+        const updatedColumn = await client.columns.updateCalculatedColumn(dataset_id, column_id, column);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Dataset ${dataset_id} calculated column ${column_id} updated successfully!\n\n` +
+                `Name: ${updatedColumn.column_name}\n` +
+                `Expression: ${updatedColumn.expression || 'N/A'}\n` +
+                `Type: ${updatedColumn.type || 'N/A'}\n` +
+                `Description: ${updatedColumn.description || 'N/A'}\n` +
+                `Display Name: ${updatedColumn.verbose_name || 'N/A'}\n` +
+                `Filterable: ${updatedColumn.filterable ? 'Yes' : 'No'}\n` +
+                `Groupable: ${updatedColumn.groupby ? 'Yes' : 'No'}\n` +
+                `Is DateTime: ${updatedColumn.is_dttm ? 'Yes' : 'No'}\n` +
+                `Active: ${updatedColumn.is_active ? 'Yes' : 'No'}`
+            },
+          ],
+        };
+      }
+
+      case "delete_calculated_column": {
+        const { dataset_id, column_id } = request.params.arguments as any;
+        await client.columns.deleteCalculatedColumn(dataset_id, column_id);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Dataset ${dataset_id} calculated column ${column_id} deleted successfully!`
             },
           ],
         };

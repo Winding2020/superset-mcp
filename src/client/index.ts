@@ -21,4 +21,25 @@ export function initializeSupersetClient(): SupersetClient {
   return supersetClient;
 }
 
-export { SupersetClient }; 
+// Main client class
+export { SupersetClient };
+
+// Specialized client modules
+export { BaseSuperset } from './base-client.js';
+export { DatasetClient } from './dataset-client.js';
+export { MetricsClient } from './metrics-client.js';
+export { ColumnsClient } from './columns-client.js';
+export { SqlClient } from './sql-client.js';
+
+// Type definitions
+export { 
+  SupersetConfig, 
+  Dataset, 
+  DatasetMetric, 
+  DatasetColumn, 
+  CalculatedColumn,
+  DatasetListResponse, 
+  CsrfTokenResponse,
+  SqlExecuteRequest,
+  SqlExecuteResponse
+} from '../types/index.js'; 

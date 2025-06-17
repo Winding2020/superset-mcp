@@ -116,7 +116,14 @@ npm start
 | `create_dataset_metric` | Create a new metric |
 | `update_dataset_metric` | Update existing metric |
 | `delete_dataset_metric` | Delete a metric |
-| `get_dataset_columns` | Get column information (useful for metric creation) |
+
+### Calculated Columns Operations
+| Tool | Description |
+|------|-------------|
+| `get_dataset_columns` | Get column information (including calculated columns) |
+| `create_calculated_column` | Create a new calculated column |
+| `update_calculated_column` | Update existing calculated column |
+| `delete_calculated_column` | Delete a calculated column |
 
 ### SQL Operations
 | Tool | Description |
@@ -191,6 +198,50 @@ Access read-only overviews through MCP resources:
 }
 ```
 
+### Calculated Columns Management
+
+#### Create a Calculated Column
+```json
+{
+  "tool": "create_calculated_column",
+  "arguments": {
+    "dataset_id": 1,
+    "column_name": "revenue_per_unit",
+    "expression": "price * quantity",
+    "type": "NUMERIC",
+    "description": "Revenue calculated as price multiplied by quantity",
+    "verbose_name": "Revenue Per Unit",
+    "filterable": true,
+    "groupby": true
+  }
+}
+```
+
+#### Update a Calculated Column
+```json
+{
+  "tool": "update_calculated_column",
+  "arguments": {
+    "dataset_id": 1,
+    "column_id": 45,
+    "expression": "(price * quantity) * 1.1",
+    "description": "Updated revenue calculation with 10% markup",
+    "verbose_name": "Revenue Per Unit (with markup)"
+  }
+}
+```
+
+#### Delete a Calculated Column
+```json
+{
+  "tool": "delete_calculated_column",
+  "arguments": {
+    "dataset_id": 1,
+    "column_id": 45
+  }
+}
+```
+
 ### SQL Query Execution
 
 #### Basic Query
@@ -232,6 +283,22 @@ Access read-only overviews through MCP resources:
 | `warning_text` | string | ❌ | Warning message for users |
 | `extra` | string | ❌ | Additional configuration (JSON) |
 | `is_restricted` | boolean | ❌ | Access restriction flag |
+
+### Calculated Column Field Reference
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `column_name` | string | ✅ | Unique column identifier |
+| `expression` | string | ✅ | SQL expression for the calculated column |
+| `type` | string | ❌ | Data type (e.g., 'VARCHAR', 'NUMERIC', 'TIMESTAMP') |
+| `description` | string | ❌ | Human-readable description |
+| `verbose_name` | string | ❌ | Display name in UI |
+| `filterable` | boolean | ❌ | Whether column can be used for filtering |
+| `groupby` | boolean | ❌ | Whether column can be used for grouping |
+| `is_dttm` | boolean | ❌ | Whether this is a datetime column |
+| `is_active` | boolean | ❌ | Whether the column is active |
+| `extra` | string | ❌ | Additional configuration (JSON) |
+| `advanced_data_type` | string | ❌ | Advanced data type specification |
+| `python_date_format` | string | ❌ | Python date format for datetime columns |
 
 ### SQL Execution Parameters
 | Parameter | Type | Required | Default | Description |

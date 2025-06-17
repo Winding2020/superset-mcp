@@ -114,7 +114,14 @@ npm start
 | `create_dataset_metric` | 创建新指标 |
 | `update_dataset_metric` | 更新现有指标 |
 | `delete_dataset_metric` | 删除指标 |
-| `get_dataset_columns` | 获取列信息（用于指标创建） |
+
+### 计算列操作
+| 工具 | 描述 |
+|------|-------------|
+| `get_dataset_columns` | 获取列信息（包括计算列） |
+| `create_calculated_column` | 创建新计算列 |
+| `update_calculated_column` | 更新现有计算列 |
+| `delete_calculated_column` | 删除计算列 |
 
 ### SQL 操作
 | 工具 | 描述 |
@@ -189,6 +196,50 @@ npm start
 }
 ```
 
+### 计算列管理
+
+#### 创建计算列
+```json
+{
+  "tool": "create_calculated_column",
+  "arguments": {
+    "dataset_id": 1,
+    "column_name": "revenue_per_unit",
+    "expression": "price * quantity",
+    "type": "NUMERIC",
+    "description": "按价格乘以数量计算的收入",
+    "verbose_name": "单位收入",
+    "filterable": true,
+    "groupby": true
+  }
+}
+```
+
+#### 更新计算列
+```json
+{
+  "tool": "update_calculated_column",
+  "arguments": {
+    "dataset_id": 1,
+    "column_id": 45,
+    "expression": "(price * quantity) * 1.1",
+    "description": "更新的收入计算，包含10%加价",
+    "verbose_name": "单位收入（含加价）"
+  }
+}
+```
+
+#### 删除计算列
+```json
+{
+  "tool": "delete_calculated_column",
+  "arguments": {
+    "dataset_id": 1,
+    "column_id": 45
+  }
+}
+```
+
 ### SQL 查询执行
 
 #### 基本查询
@@ -230,6 +281,22 @@ npm start
 | `warning_text` | string | ❌ | 用户警告消息 |
 | `extra` | string | ❌ | 附加配置（JSON） |
 | `is_restricted` | boolean | ❌ | 访问限制标志 |
+
+### 计算列字段参考
+| 字段 | 类型 | 必需 | 描述 |
+|-------|------|----------|-------------|
+| `column_name` | string | ✅ | 唯一列标识符 |
+| `expression` | string | ✅ | 计算列的 SQL 表达式 |
+| `type` | string | ❌ | 数据类型（如 'VARCHAR', 'NUMERIC', 'TIMESTAMP'） |
+| `description` | string | ❌ | 人类可读的描述 |
+| `verbose_name` | string | ❌ | UI 中的显示名称 |
+| `filterable` | boolean | ❌ | 列是否可用于过滤 |
+| `groupby` | boolean | ❌ | 列是否可用于分组 |
+| `is_dttm` | boolean | ❌ | 是否为日期时间列 |
+| `is_active` | boolean | ❌ | 列是否处于活跃状态 |
+| `extra` | string | ❌ | 附加配置（JSON） |
+| `advanced_data_type` | string | ❌ | 高级数据类型规范 |
+| `python_date_format` | string | ❌ | 日期时间列的 Python 日期格式 |
 
 ### SQL 执行参数
 | 参数 | 类型 | 必需 | 默认值 | 描述 |

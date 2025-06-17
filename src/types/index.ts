@@ -40,12 +40,20 @@ export interface DatasetMetric {
 
 // Dataset column information
 export interface DatasetColumn {
+  id?: number;
   column_name: string;
-  type: string;
+  type?: string;
   description?: string;
   is_dttm?: boolean;
   expression?: string;
   verbose_name?: string;
+  filterable?: boolean;
+  groupby?: boolean;
+  is_active?: boolean;
+  extra?: string;
+  advanced_data_type?: string;
+  python_date_format?: string;
+  uuid?: string;
 }
 
 // SQL execution request parameters
@@ -112,4 +120,20 @@ export interface DatasetListResponse {
 export interface CsrfTokenResponse {
   token: string;
   sessionCookie: string;
+}
+
+// Calculated column create/update interface
+export interface CalculatedColumn {
+  column_name: string;
+  expression: string;
+  type?: string;
+  description?: string;
+  verbose_name?: string;
+  filterable?: boolean;
+  groupby?: boolean;
+  is_dttm?: boolean;
+  is_active?: boolean;
+  extra?: string;
+  advanced_data_type?: string;
+  python_date_format?: string;
 } 

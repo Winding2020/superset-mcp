@@ -9,11 +9,11 @@ export async function handleResourceRead(request: any) {
   try {
     switch (request.params.uri) {
       case "superset://datasets": {
-        const result = await client.getDatasets(0, 50);
+        const result = await client.datasets.getDatasets(0, 50);
         const content = `Superset Datasets Overview\n` +
           `========================\n\n` +
           `Total: ${result.count}\n\n` +
-          result.result.map(dataset => 
+          result.result.map((dataset: any) => 
             `• ${dataset.table_name} (ID: ${dataset.id})\n` +
             `  Database ID: ${dataset.database_id}\n` +
             `  Schema: ${dataset.schema || 'N/A'}\n` +
@@ -32,11 +32,11 @@ export async function handleResourceRead(request: any) {
       }
       
       case "superset://databases": {
-        const databases = await client.getDatabases();
+        const databases = await client.sql.getDatabases();
         const content = `Superset Database Connections\n` +
           `===================\n\n` +
           `Total: ${databases.length}\n\n` +
-          databases.map(db => 
+          databases.map((db: any) => 
             `• ${db.database_name} (ID: ${db.id})\n` +
             `  Driver: ${db.sqlalchemy_uri?.split('://')[0] || 'N/A'}\n` +
             `  Allows async: ${db.allow_run_async ? 'Yes' : 'No'}\n`
@@ -54,13 +54,13 @@ export async function handleResourceRead(request: any) {
       }
       
       case "superset://dataset-metrics": {
-        const datasetsResult = await client.getDatasets(0, 100);
+        const datasetsResult = await client.datasets.getDatasets(0, 100);
         let allMetrics: Array<{datasetId: number, datasetName: string, metrics: DatasetMetric[]}> = [];
         
         // Get metrics for all datasets
         for (const dataset of datasetsResult.result) {
           try {
-            const metrics = await client.getDatasetMetrics(dataset.id);
+            const metrics = await client.metrics.getDatasetMetrics(dataset.id);
             if (metrics.length > 0) {
               allMetrics.push({
                 datasetId: dataset.id,
