@@ -1,6 +1,6 @@
 import { BaseSuperset } from "./base-client.js";
 import { SqlExecuteRequest, SqlExecuteResponse } from "../types/index.js";
-import { getErrorMessage } from "../utils/error.js";
+import { getErrorMessage, formatSqlError } from "../utils/error.js";
 
 /**
  * SQL execution and database management client
@@ -49,7 +49,10 @@ export class SqlClient extends BaseSuperset {
         console.error('Response status:', axiosError.response?.status);
         console.error('Response data:', JSON.stringify(axiosError.response?.data, null, 2));
       }
-      throw new Error(`Failed to execute SQL: ${getErrorMessage(error)}`);
+      
+      // Use enhanced SQL error formatting
+      const detailedError = formatSqlError(error, request.sql, request.database_id);
+      throw new Error(detailedError);
     }
   }
 } 

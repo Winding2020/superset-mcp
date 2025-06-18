@@ -262,7 +262,7 @@ npm start
     "sql": "SELECT * FROM sales WHERE date >= '2024-01-01'",
     "schema": "analytics",
     "limit": 500,
-    "display_rows": 10
+    "display_rows": 50
   }
 }
 ```
@@ -306,7 +306,7 @@ npm start
 | `schema` | string | ❌ | - | 数据库架构 |
 | `limit` | number | ❌ | 1000 | 返回的最大行数 |
 | `expand_data` | boolean | ❌ | true | 是否展开结果数据 |
-| `display_rows` | number | ❌ | 10 | 预览中显示的行数 |
+| `display_rows` | number | ❌ | 50 | 预览中显示的行数 |
 
 ## 🔍 错误处理
 

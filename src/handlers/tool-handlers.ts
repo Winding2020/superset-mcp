@@ -264,7 +264,7 @@ export async function handleToolCall(request: any) {
       }
       
       case "execute_sql": {
-        const { database_id, sql, schema, limit, expand_data, display_rows = 10 } = request.params.arguments as any;
+        const { database_id, sql, schema, limit, expand_data, display_rows = 50 } = request.params.arguments as any;
         const sqlRequest = {
           database_id,
           sql,

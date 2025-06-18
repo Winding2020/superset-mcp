@@ -84,4 +84,84 @@ export function getErrorMessage(error: unknown): string {
   }
   
   return String(error);
+}
+
+// Enhanced SQL error handling function
+export function formatSqlError(error: unknown, sql?: string, database_id?: number): string {
+  const baseError = getErrorMessage(error);
+  
+  // Build detailed error information
+  let errorDetails = `SQL Execution Error\n`;
+  
+  if (sql) {
+    errorDetails += `SQL Query:\n${sql}\n\n`;
+  }
+  
+  if (database_id) {
+    errorDetails += `Database ID: ${database_id}\n\n`;
+  }
+  
+  // Parse the error to extract structured information
+  if (error instanceof Error && 'response' in error) {
+    const axiosError = error as any;
+    const response = axiosError.response;
+    
+    if (response) {
+      errorDetails += `HTTP Status: ${response.status} ${response.statusText}\n`;
+      
+      if (response.data && typeof response.data === 'object') {
+        // Handle Superset-specific error structure
+        if (response.data.message) {
+          errorDetails += `Error Message: ${response.data.message}\n`;
+        }
+        
+        if (response.data.error_type) {
+          errorDetails += `Error Type: ${response.data.error_type}\n`;
+        }
+        
+        if (response.data.level) {
+          errorDetails += `Error Level: ${response.data.level}\n`;
+        }
+        
+        // Handle issue codes
+        if (response.data.extra?.issue_codes && Array.isArray(response.data.extra.issue_codes)) {
+          errorDetails += `\nIssue Codes:\n`;
+          response.data.extra.issue_codes.forEach((issue: any, index: number) => {
+            errorDetails += `  ${index + 1}. Code ${issue.code}: ${issue.message}\n`;
+          });
+        }
+        
+        // Handle SQL-specific errors
+        if (response.data.errors && Array.isArray(response.data.errors)) {
+          errorDetails += `\nDetailed Errors:\n`;
+          response.data.errors.forEach((err: any, index: number) => {
+            if (typeof err === 'string') {
+              errorDetails += `  ${index + 1}. ${err}\n`;
+            } else if (err.message) {
+              errorDetails += `  ${index + 1}. ${err.message}\n`;
+              if (err.error_type) {
+                errorDetails += `     Type: ${err.error_type}\n`;
+              }
+              if (err.level) {
+                errorDetails += `     Level: ${err.level}\n`;
+              }
+            } else {
+              errorDetails += `  ${index + 1}. ${JSON.stringify(err)}\n`;
+            }
+          });
+        }
+        
+        // Handle database-specific errors
+        if (response.data.description) {
+          errorDetails += `\nDescription: ${response.data.description}\n`;
+        }
+      } else {
+        errorDetails += `Response Data: ${String(response.data)}\n`;
+      }
+    }
+  } else {
+    errorDetails += `Basic Error: ${baseError}\n`;
+  }
+  
+  return errorDetails;
 } 

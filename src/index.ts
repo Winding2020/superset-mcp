@@ -40,24 +40,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     const result = await handleToolCall(request);
     
-    // If the handler returned an error result, throw it as McpError
+    // Always return the result as MCP success, even if it contains an error
+    // This allows users to see the actual error details in the MCP client
     if (result.isError) {
-      const errorMessage = result.content?.[0]?.text || 'Unknown error occurred';
-      console.error(`Tool execution failed for ${request.params.name}:`, errorMessage);
-      throw new McpError(ErrorCode.InternalError, errorMessage);
+      console.error(`Tool execution failed for ${request.params.name}:`, result.content?.[0]?.text || 'Unknown error occurred');
     }
     
     return result;
   } catch (error) {
-    // If it's already an McpError, re-throw it directly
-    if (error instanceof McpError) {
-      throw error;
-    }
-    
-    // Get detailed error message for other errors
+    // Convert any uncaught errors to error result format
     const errorMessage = getErrorMessage(error);
     console.error(`Tool execution failed for ${request.params.name}:`, errorMessage);
-    throw new McpError(ErrorCode.InternalError, errorMessage);
+    
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error: ${errorMessage}`,
+        },
+      ],
+      isError: true,
+    };
   }
 });
 
@@ -75,7 +78,17 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     console.error(`Resource read failed for ${request.params.uri}:`, errorMessage);
-    throw new McpError(ErrorCode.InternalError, errorMessage);
+    
+    // Return error as successful response content
+    return {
+      contents: [
+        {
+          uri: request.params.uri,
+          mimeType: "text/plain",
+          text: `Error reading resource: ${errorMessage}`,
+        },
+      ],
+    };
   }
 });
 

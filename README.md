@@ -264,7 +264,7 @@ Access read-only overviews through MCP resources:
     "sql": "SELECT * FROM sales WHERE date >= '2024-01-01'",
     "schema": "analytics",
     "limit": 500,
-    "display_rows": 10
+    "display_rows": 50
   }
 }
 ```
@@ -308,7 +308,7 @@ Access read-only overviews through MCP resources:
 | `schema` | string | ❌ | - | Database schema |
 | `limit` | number | ❌ | 1000 | Maximum rows to return |
 | `expand_data` | boolean | ❌ | true | Whether to expand result data |
-| `display_rows` | number | ❌ | 10 | Rows to show in preview |
+| `display_rows` | number | ❌ | 50 | Rows to show in preview |
 
 ## 🔍 Error Handling
 

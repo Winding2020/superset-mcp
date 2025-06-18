@@ -280,8 +280,8 @@ export const toolDefinitions = [
         },
         display_rows: {
           type: "number",
-          description: "Number of data rows to display (default 10)",
-          default: 10,
+          description: "Number of data rows to display (default 50)",
+          default: 50,
         },
       },
       required: ["database_id", "sql"],
