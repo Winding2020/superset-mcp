@@ -1,5 +1,56 @@
 import { AxiosError } from "axios";
 
+// Helper function to format objects for display
+function formatObjectForDisplay(obj: any): string {
+  if (obj === null || obj === undefined) {
+    return String(obj);
+  }
+  
+  if (typeof obj === 'string') {
+    return obj;
+  }
+  
+  if (typeof obj === 'object') {
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => formatObjectForDisplay(item)).join(', ');
+    }
+    
+    // Handle objects with common error properties
+    if (obj.message) {
+      return obj.message;
+    }
+    
+    // Handle validation error objects
+    if (typeof obj === 'object' && Object.keys(obj).length > 0) {
+      const entries = Object.entries(obj);
+      if (entries.length === 1 && Array.isArray(entries[0][1])) {
+        // Single field validation error
+        const [field, messages] = entries[0];
+        return `${field}: ${(messages as any[]).join(', ')}`;
+      } else {
+        // Multiple fields or complex structure
+        return entries.map(([key, value]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(', ')}`;
+          } else {
+            return `${key}: ${formatObjectForDisplay(value)}`;
+          }
+        }).join('; ');
+      }
+    }
+    
+    // Fallback to JSON
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch {
+      return String(obj);
+    }
+  }
+  
+  return String(obj);
+}
+
 // Error handling helper function
 export function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -43,9 +94,15 @@ export function getErrorMessage(error: unknown): string {
         
         // If there's an error array
         if (response.data.errors && Array.isArray(response.data.errors)) {
-          const errorMessages = response.data.errors.map((err: any) => 
-            typeof err === 'string' ? err : JSON.stringify(err)
-          ).join(', ');
+          const errorMessages = response.data.errors.map((err: any) => {
+            if (typeof err === 'string') {
+              return err;
+            } else if (err.message) {
+              return err.message;
+            } else {
+              return JSON.stringify(err);
+            }
+          }).join(', ');
           return `${response.status} ${response.statusText}: ${errorMessages}`;
         }
         
@@ -164,4 +221,119 @@ export function formatSqlError(error: unknown, sql?: string, database_id?: numbe
   }
   
   return errorDetails;
+}
+
+// Enhanced dataset error handling function
+export function formatDatasetError(error: unknown, operation: string, datasetId?: number): string {
+  if (error instanceof Error && 'response' in error) {
+    const axiosError = error as any;
+    const response = axiosError.response;
+    
+    if (response) {
+      let errorDetails = `Dataset ${operation} Error\n\n`;
+      
+      if (datasetId) {
+        errorDetails += `Dataset ID: ${datasetId}\n`;
+      }
+      
+      errorDetails += `Status: ${response.status} ${response.statusText}\n\n`;
+      
+      if (response.data && typeof response.data === 'object') {
+        // Handle validation errors
+        if (response.status === 400 && response.data) {
+          errorDetails += `Validation Errors:\n`;
+          Object.entries(response.data).forEach(([field, messages]) => {
+            errorDetails += `• ${field}: ${formatObjectForDisplay(messages)}\n`;
+          });
+          return errorDetails;
+        }
+        
+        // Handle other structured errors
+        if (response.data.message) {
+          errorDetails += `Message: ${formatObjectForDisplay(response.data.message)}\n`;
+        }
+        
+        if (response.data.errors && Array.isArray(response.data.errors)) {
+          errorDetails += `Details:\n`;
+          response.data.errors.forEach((err: any, index: number) => {
+            errorDetails += `  ${index + 1}. ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}\n`;
+          });
+        }
+        
+        return errorDetails;
+      }
+    }
+  }
+  
+  return getErrorMessage(error);
+}
+
+// Enhanced authentication error handling function
+export function formatAuthError(error: unknown): string {
+  if (error instanceof Error && 'response' in error) {
+    const axiosError = error as any;
+    const response = axiosError.response;
+    
+    if (response) {
+      let errorDetails = `Authentication Error\n\n`;
+      errorDetails += `Status: ${response.status} ${response.statusText}\n\n`;
+      
+      if (response.status === 401) {
+        errorDetails += `Reason: Invalid username or password\n`;
+        errorDetails += `Solution: Please check your credentials in the MCP configuration\n`;
+      } else if (response.status === 403) {
+        errorDetails += `Reason: Access forbidden\n`;
+        errorDetails += `Solution: Your account may not have sufficient permissions\n`;
+      } else if (response.status === 500) {
+        errorDetails += `Reason: Server error during authentication\n`;
+        errorDetails += `Solution: Please check if Superset is running correctly\n`;
+      }
+      
+      if (response.data && typeof response.data === 'object' && response.data.message) {
+        errorDetails += `\nServer Message: ${response.data.message}\n`;
+      }
+      
+      return errorDetails;
+    }
+  }
+  
+  return getErrorMessage(error);
+}
+
+// Enhanced database connection error handling function
+export function formatDatabaseError(error: unknown, operation: string): string {
+  if (error instanceof Error && 'response' in error) {
+    const axiosError = error as any;
+    const response = axiosError.response;
+    
+    if (response) {
+      let errorDetails = `Database ${operation} Error\n\n`;
+      errorDetails += `Status: ${response.status} ${response.statusText}\n\n`;
+      
+      if (response.status === 404) {
+        errorDetails += `Reason: Database not found\n`;
+        errorDetails += `Solution: Please check if the database ID is correct\n`;
+      } else if (response.status === 500) {
+        errorDetails += `Reason: Database connection or server error\n`;
+        errorDetails += `Solution: Please check database connectivity and server status\n`;
+      }
+      
+      if (response.data && typeof response.data === 'object') {
+        if (response.data.message) {
+          errorDetails += `\nMessage: ${response.data.message}\n`;
+        }
+        
+        if (response.data.errors && Array.isArray(response.data.errors)) {
+          errorDetails += `\nDetails:\n`;
+          response.data.errors.forEach((err: any, index: number) => {
+            errorDetails += `  ${index + 1}. ${typeof err === 'string' ? err : err.message || JSON.stringify(err)}\n`;
+          });
+        }
+      }
+      
+      return errorDetails;
+    }
+  }
+  
+  return getErrorMessage(error);
 } 

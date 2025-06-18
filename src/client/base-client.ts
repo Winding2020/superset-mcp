@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import { SupersetConfig, CsrfTokenResponse } from "../types/index.js";
-import { getErrorMessage } from "../utils/error.js";
+import { getErrorMessage, formatAuthError } from "../utils/error.js";
 
 /**
  * Base Superset API client that handles authentication and CSRF tokens
@@ -160,7 +160,7 @@ export class BaseSuperset {
       this.config.accessToken = response.data.access_token;
       this.isAuthenticated = true;
     } catch (error) {
-      const errorMessage = getErrorMessage(error);
+      const errorMessage = formatAuthError(error);
       console.error('Authentication failed:', errorMessage);
       throw new Error(errorMessage);
     }

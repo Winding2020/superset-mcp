@@ -1,6 +1,6 @@
 import { BaseSuperset } from "./base-client.js";
 import { SqlExecuteRequest, SqlExecuteResponse } from "../types/index.js";
-import { getErrorMessage, formatSqlError } from "../utils/error.js";
+import { getErrorMessage, formatSqlError, formatDatabaseError } from "../utils/error.js";
 
 /**
  * SQL execution and database management client
@@ -15,7 +15,7 @@ export class SqlClient extends BaseSuperset {
       const response = await this.api.get('/api/v1/database/');
       return response.data.result;
     } catch (error) {
-      throw new Error(`Failed to get database list: ${getErrorMessage(error)}`);
+      throw new Error(formatDatabaseError(error, "List"));
     }
   }
 

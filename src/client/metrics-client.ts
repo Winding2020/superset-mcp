@@ -1,7 +1,7 @@
 import { BaseSuperset } from "./base-client.js";
 import { DatasetClient } from "./dataset-client.js";
 import { DatasetMetric } from "../types/index.js";
-import { getErrorMessage } from "../utils/error.js";
+import { getErrorMessage, formatDatasetError } from "../utils/error.js";
 
 /**
  * Metrics management client
@@ -22,7 +22,7 @@ export class MetricsClient extends BaseSuperset {
       const response = await this.api.get(`/api/v1/dataset/${datasetId}`);
       return response.data.result.metrics || [];
     } catch (error) {
-      throw new Error(`Failed to get dataset ${datasetId} metrics: ${getErrorMessage(error)}`);
+      throw new Error(formatDatasetError(error, "Get Metrics", datasetId));
     }
   }
 

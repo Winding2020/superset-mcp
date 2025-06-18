@@ -1,6 +1,6 @@
 import { BaseSuperset } from "./base-client.js";
 import { Dataset, DatasetListResponse } from "../types/index.js";
-import { getErrorMessage } from "../utils/error.js";
+import { getErrorMessage, formatDatasetError } from "../utils/error.js";
 
 /**
  * Dataset management client
@@ -28,7 +28,7 @@ export class DatasetClient extends BaseSuperset {
         count: response.data.count,
       };
     } catch (error) {
-      throw new Error(`Failed to get datasets: ${getErrorMessage(error)}`);
+      throw new Error(formatDatasetError(error, "List"));
     }
   }
 
@@ -40,7 +40,7 @@ export class DatasetClient extends BaseSuperset {
       const response = await this.api.get(`/api/v1/dataset/${id}`);
       return response.data.result;
     } catch (error) {
-      throw new Error(`Failed to get dataset ${id}: ${getErrorMessage(error)}`);
+      throw new Error(formatDatasetError(error, "Get", id));
     }
   }
 
@@ -91,7 +91,7 @@ export class DatasetClient extends BaseSuperset {
         console.error('Response status:', axiosError.response?.status);
         console.error('Response data:', JSON.stringify(axiosError.response?.data, null, 2));
       }
-      throw new Error(`Failed to create dataset: ${getErrorMessage(error)}`);
+      throw new Error(formatDatasetError(error, "Create"));
     }
   }
 
