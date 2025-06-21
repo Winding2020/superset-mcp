@@ -70,7 +70,11 @@ export class DatasetClient extends BaseSuperset {
         data: requestData
       });
 
-      const createdDataset = response.data.result;
+      const createdDataset = {
+        ...response.data.result,
+        id: response.data.id,
+        database_id: response.data.result.database.id,
+      };
 
       // If description exists, update immediately after creation
       if (dataset.description && createdDataset.id) {
