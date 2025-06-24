@@ -11,10 +11,8 @@ import {
   ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { toolDefinitions } from "./server/tools.js";
-import { resourceDefinitions } from "./server/resources.js";
-import { handleToolCall } from "./handlers/tool-handlers.js";
-import { handleResourceRead } from "./handlers/resource-handlers.js";
+import { toolDefinitions, handleToolCall } from "./handlers/tool-handlers.js";
+import { resourceDefinitions, handleResourceRead } from "./handlers/resource-handlers.js";
 import { getErrorMessage } from "./utils/error.js";
 
 // Create MCP server

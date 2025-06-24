@@ -31,6 +31,7 @@ export { MetricsClient } from './metrics-client.js';
 export { ColumnsClient } from './columns-client.js';
 export { SqlClient } from './sql-client.js';
 export { ChartClient } from './chart-client.js';
+export { DashboardClient } from './dashboard-client.js';
 
 // Type definitions
 export { 
@@ -42,5 +43,19 @@ export {
   DatasetListResponse, 
   CsrfTokenResponse,
   SqlExecuteRequest,
-  SqlExecuteResponse
+  SqlExecuteResponse,
+  Chart,
+  ChartParams,
+  ChartUpdateRequest,
+  ChartListQuery,
+  ChartListItem,
+  ChartListResponse,
+  Dashboard,
+  DashboardListItem,
+  DashboardListQuery,
+  DashboardListResponse,
+  DashboardChartItem,
+  DashboardChartsResponse,
+  DashboardFilterConfig,
+  DashboardQueryContext
 } from '../types/index.js'; 

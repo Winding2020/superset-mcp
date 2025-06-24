@@ -10,7 +10,11 @@ export interface SupersetConfig {
 // Dataset data structure
 export interface Dataset {
   id: number;
-  database_id: number;
+  database_id?: number; // Keep for backward compatibility
+  database?: {
+    id: number;
+    database_name: string;
+  };
   table_name: string;
   schema?: string;
   description?: string;
@@ -182,4 +186,304 @@ export interface ChartUpdateRequest {
   is_managed_externally?: boolean;
   owners?: number[];
   tags?: number[];
+}
+
+// Chart list query parameters
+export interface ChartListQuery {
+  page?: number;
+  page_size?: number;
+  order_column?: string;
+  order_direction?: 'asc' | 'desc';
+  filters?: Array<{
+    col: string;
+    opr: string;
+    value: any;
+  }>;
+  columns?: string[];
+  select_columns?: string[];
+  keys?: Array<'list_columns' | 'order_columns' | 'label_columns' | 'description_columns' | 'list_title' | 'none'>;
+}
+
+// Chart list item (simplified chart data for list view)
+export interface ChartListItem {
+  id: number;
+  slice_name: string;
+  viz_type: string;
+  cache_timeout?: number;
+  certification_details?: string;
+  certified_by?: string;
+  changed_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  changed_by_name?: string;
+  changed_on_delta_humanized?: string;
+  changed_on_dttm?: string;
+  changed_on_utc?: string;
+  created_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  created_by_name?: string;
+  created_on_delta_humanized?: string;
+  dashboards?: Array<{
+    id: number;
+    dashboard_title: string;
+  }>;
+  datasource_id?: number;
+  datasource_name_text?: string;
+  datasource_type?: string;
+  datasource_url?: string;
+  description?: string;
+  description_markeddown?: string;
+  edit_url?: string;
+  form_data?: any;
+  is_managed_externally?: boolean;
+  last_saved_at?: string;
+  last_saved_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  owners?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+  }>;
+  params?: string;
+  slice_url?: string;
+  table?: {
+    table_name: string;
+    default_endpoint?: string;
+  };
+  tags?: Array<{
+    id: number;
+    name: string;
+    type: number;
+  }>;
+  thumbnail_url?: string;
+  url?: string;
+}
+
+// Chart list response
+export interface ChartListResponse {
+  result: ChartListItem[];
+  count: number;
+  description_columns?: Record<string, string>;
+  label_columns?: Record<string, string>;
+  list_columns?: string[];
+  list_title?: string;
+  order_columns?: string[];
+  ids?: string[];
+}
+
+// Dashboard data structure
+export interface Dashboard {
+  id: number;
+  dashboard_title: string;
+  slug?: string;
+  description?: string;
+  json_metadata?: string;
+  position_json?: string;
+  css?: string;
+  published?: boolean;
+  owners?: Array<{ id: number; username: string }>;
+  roles?: Array<{ id: number; name: string }>;
+  tags?: Array<{ id: number; name: string }>;
+  changed_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  changed_on_dttm?: string;
+  created_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  created_on_dttm?: string;
+}
+
+// Dashboard chart item (chart info from dashboard endpoint)
+export interface DashboardChartItem {
+  id: number;
+  slice_name: string;
+  viz_type: string;
+  datasource_id?: number;
+  datasource_type?: string;
+  datasource_name?: string;
+  params?: string;
+  query_context?: string;
+  description?: string;
+  cache_timeout?: number;
+  form_data?: any;
+  is_managed_externally?: boolean;
+  last_saved_at?: string;
+  slice_url?: string;
+  edit_url?: string;
+  table?: {
+    table_name: string;
+    default_endpoint?: string;
+  };
+}
+
+// Dashboard charts response
+export interface DashboardChartsResponse {
+  result: DashboardChartItem[];
+}
+
+// Dashboard filter configuration (parsed from json_metadata)
+export interface DashboardFilterConfig {
+  native_filter_configuration?: Array<{
+    id: string;
+    filterType: string;
+    targets: Array<{
+      datasetId: number;
+      column: {
+        name: string;
+      };
+    }>;
+    defaultDataMask?: {
+      extraFormData?: any;
+      filterState?: any;
+    };
+    cascadeParentIds?: string[];
+    scope?: {
+      rootPath: string[];
+      excluded: number[];
+    };
+    controlValues?: {
+      [key: string]: any;
+    };
+    name: string;
+    description?: string;
+    chartsInScope?: number[];
+    tabsInScope?: string[];
+  }>;
+  global_chart_configuration?: {
+    [chartId: string]: {
+      id: number;
+      crossFilters?: {
+        scope?: {
+          rootPath: string[];
+          excluded: number[];
+        };
+        chartsInScope?: number[];
+      };
+    };
+  };
+  filter_scopes?: {
+    [filterId: string]: {
+      [chartId: string]: {
+        scope: string[];
+        immune: number[];
+      };
+    };
+  };
+  default_filters?: string;
+  color_scheme?: string;
+  expanded_slices?: { [key: string]: boolean };
+  refresh_frequency?: number;
+  timed_refresh_immune_slices?: number[];
+  label_colors?: { [key: string]: string };
+  shared_label_colors?: { [key: string]: string };
+  color_scheme_domain?: string[];
+  cross_filters_enabled?: boolean;
+}
+
+// Dashboard query context result
+export interface DashboardQueryContext {
+  dashboard_id: number;
+  chart_id: number;
+  chart_name: string;
+  dataset_id: number;
+  dataset_name: string;
+  default_params: any;
+  dashboard_filters: DashboardFilterConfig;
+  applied_filters: Array<{
+    filter_id: string;
+    filter_type: string;
+    column: string;
+    value: any;
+    scope: {
+      charts: number[];
+      tabs: string[];
+    };
+  }>;
+  final_query_context: any;
+}
+
+// Dashboard list item structure (for list API response)
+export interface DashboardListItem {
+  id: number;
+  dashboard_title?: string;
+  slug?: string;
+  certification_details?: string;
+  certified_by?: string;
+  changed_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  changed_by_name?: string;
+  changed_on_delta_humanized?: string;
+  changed_on_utc?: string;
+  created_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  created_on_delta_humanized?: string;
+  css?: string;
+  is_managed_externally?: boolean;
+  json_metadata?: string;
+  owners?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+  }>;
+  position_json?: string;
+  published?: boolean;
+  roles?: Array<{
+    id: number;
+    name: string;
+  }>;
+  status?: string;
+  tags?: Array<{
+    id: number;
+    name: string;
+    type: number;
+  }>;
+  thumbnail_url?: string;
+  url?: string;
+}
+
+// Dashboard list query parameters
+export interface DashboardListQuery {
+  page?: number;
+  page_size?: number;
+  order_column?: string;
+  order_direction?: 'asc' | 'desc';
+  filters?: Array<{
+    col: string;
+    opr: string;
+    value: any;
+  }>;
+  columns?: string[];
+  select_columns?: string[];
+  keys?: Array<'list_columns' | 'order_columns' | 'label_columns' | 'description_columns' | 'list_title' | 'none'>;
+}
+
+// Dashboard list response
+export interface DashboardListResponse {
+  result: DashboardListItem[];
+  count: number;
+  description_columns?: Record<string, string>;
+  label_columns?: Record<string, string>;
+  list_columns?: string[];
+  list_title?: string;
+  order_columns?: string[];
+  ids?: string[];
 } 

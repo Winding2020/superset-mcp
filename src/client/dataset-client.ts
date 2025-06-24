@@ -8,18 +8,21 @@ import { getErrorMessage, formatDatasetError } from "../utils/error.js";
 export class DatasetClient extends BaseSuperset {
   
   // Get all datasets
-  async getDatasets(page = 0, pageSize = 20): Promise<DatasetListResponse> {
+  async getDatasets(query: any = {}): Promise<DatasetListResponse> {
     await this.ensureAuthenticated();
     
     try {
+      const finalQuery = {
+        page: 0,
+        page_size: 20,
+        order_column: 'changed_on_delta_humanized',
+        order_direction: 'desc',
+        ...query,
+      };
+      
       const response = await this.api.get('/api/v1/dataset/', {
         params: {
-          q: JSON.stringify({
-            page,
-            page_size: pageSize,
-            order_column: 'changed_on_delta_humanized',
-            order_direction: 'desc',
-          }),
+          q: JSON.stringify(finalQuery),
         },
       });
       

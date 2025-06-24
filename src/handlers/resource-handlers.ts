@@ -1,3 +1,24 @@
+export const resourceDefinitions = [
+  {
+    uri: "superset://datasets",
+    name: "Superset Datasets Overview",
+    description: "Overview information of all datasets in Superset",
+    mimeType: "text/plain",
+  },
+  {
+    uri: "superset://databases", 
+    name: "Superset Database List",
+    description: "All database connections configured in Superset",
+    mimeType: "text/plain",
+  },
+  {
+    uri: "superset://dataset-metrics",
+    name: "Dataset Metrics Overview",
+    description: "Overview of metrics defined in all datasets",
+    mimeType: "text/plain",
+  },
+];
+
 import { ReadResourceRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { initializeSupersetClient } from "../client/index.js";
 import { getErrorMessage } from "../utils/error.js";
@@ -9,7 +30,7 @@ export async function handleResourceRead(request: any) {
   try {
     switch (request.params.uri) {
       case "superset://datasets": {
-        const result = await client.datasets.getDatasets(0, 50);
+        const result = await client.datasets.getDatasets({ page: 0, page_size: 50 });
         const content = `Superset Datasets Overview\n` +
           `========================\n\n` +
           `Total: ${result.count}\n\n` +
@@ -54,7 +75,7 @@ export async function handleResourceRead(request: any) {
       }
       
       case "superset://dataset-metrics": {
-        const datasetsResult = await client.datasets.getDatasets(0, 100);
+        const datasetsResult = await client.datasets.getDatasets({ page: 0, page_size: 100 });
         let allMetrics: Array<{datasetId: number, datasetName: string, metrics: DatasetMetric[]}> = [];
         
         // Get metrics for all datasets

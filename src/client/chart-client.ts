@@ -1,4 +1,4 @@
-import { Chart, ChartUpdateRequest } from "../types/index.js";
+import { Chart, ChartUpdateRequest, ChartListQuery, ChartListResponse } from "../types/index.js";
 import { BaseSuperset } from "./base-client.js";
 import { getErrorMessage } from "../utils/error.js";
 
@@ -6,6 +6,27 @@ import { getErrorMessage } from "../utils/error.js";
  * Client for Superset Chart operations
  */
 export class ChartClient extends BaseSuperset {
+  /**
+   * Get list of charts with optional filtering, sorting, and pagination
+   */
+  async listCharts(query: ChartListQuery = {}): Promise<ChartListResponse> {
+    await this.ensureAuthenticated();
+    
+    try {
+      const params: any = {};
+      
+      // Build query parameters
+      if (Object.keys(query).length > 0) {
+        params.q = JSON.stringify(query);
+      }
+      
+      const response = await this.api.get('/api/v1/chart/', { params });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to list charts: ${getErrorMessage(error)}`);
+    }
+  }
+
   /**
    * Get chart information by ID
    */

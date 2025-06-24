@@ -138,8 +138,17 @@ npm start
 ### Chart Operations
 | Tool | Description |
 |------|-------------|
+| `list_charts` | Get paginated list of all charts with filtering and sorting |
 | `get_chart_params` | Get visualization parameters of a chart (call this FIRST) |
 | `update_chart_params` | Update chart visualization parameters (call AFTER get_chart_params) |
+
+### Dashboard Operations
+| Tool | Description |
+|------|-------------|
+| `list_dashboards` | Get paginated list of all dashboards with filtering and sorting |
+| `get_dashboard_charts` | Get all charts in a specific dashboard with their information |
+| `get_dashboard_filters` | Get dashboard's filter configuration (native filters, global filters) |
+| `get_dashboard_chart_query_context` | Get complete query context for a chart in dashboard (dataset ID, params, applied filters) |
 
 ## 📚 Resources
 
@@ -275,6 +284,46 @@ Access read-only overviews through MCP resources:
 }
 ```
 
+### Chart Management
+
+#### List Charts
+```json
+{
+  "tool": "list_charts",
+  "arguments": {
+    "page": 0,
+    "page_size": 20,
+    "order_column": "changed_on_dttm",
+    "order_direction": "desc"
+  }
+}
+```
+
+#### List Charts with Filters
+```json
+{
+  "tool": "list_charts",
+  "arguments": {
+    "page": 0,
+    "page_size": 10,
+    "filters": [
+      {
+        "col": "viz_type",
+        "opr": "eq",
+        "value": "table"
+      },
+      {
+        "col": "slice_name",
+        "opr": "like",
+        "value": "%sales%"
+      }
+    ],
+    "order_column": "slice_name",
+    "order_direction": "asc"
+  }
+}
+```
+
 ### Chart Visualization Management
 
 #### Get Chart Visualization Parameters (Step 1)
@@ -307,6 +356,83 @@ Access read-only overviews through MCP resources:
 ```
 
 **Note**: Always call `get_chart_params` first to see the current configuration before updating. The params structure varies based on the chart's `viz_type`.
+
+### Dashboard Management
+
+#### List Dashboards
+```json
+{
+  "tool": "list_dashboards",
+  "arguments": {
+    "page": 0,
+    "page_size": 20,
+    "order_column": "changed_on_dttm",
+    "order_direction": "desc"
+  }
+}
+```
+
+#### List Dashboards with Filters
+```json
+{
+  "tool": "list_dashboards",
+  "arguments": {
+    "page": 0,
+    "page_size": 10,
+    "filters": [
+      {
+        "col": "published",
+        "opr": "eq",
+        "value": true
+      },
+      {
+        "col": "dashboard_title",
+        "opr": "like",
+        "value": "%sales%"
+      }
+    ],
+    "order_column": "dashboard_title",
+    "order_direction": "asc"
+  }
+}
+```
+
+#### Get All Charts in a Dashboard
+```json
+{
+  "tool": "get_dashboard_charts",
+  "arguments": {
+    "dashboard_id": 5
+  }
+}
+```
+
+#### Get Dashboard Filter Configuration
+```json
+{
+  "tool": "get_dashboard_filters",
+  "arguments": {
+    "dashboard_id": 5
+  }
+}
+```
+
+#### Get Complete Chart Query Context from Dashboard
+```json
+{
+  "tool": "get_dashboard_chart_query_context",
+  "arguments": {
+    "dashboard_id": 5,
+    "chart_id": 123
+  }
+}
+```
+
+This tool provides the most comprehensive information about how a chart behaves within a specific dashboard, including:
+- Chart's dataset ID and name
+- Chart's default visualization parameters
+- All dashboard-level filters (native filters, global filters) that apply to the chart
+- Final merged query context that combines chart settings with dashboard filters
 
 ## 📖 API Reference
 

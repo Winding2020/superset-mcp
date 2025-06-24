@@ -136,8 +136,17 @@ npm start
 ### 图表操作
 | 工具 | 描述 |
 |------|-------------|
+| `list_charts` | 获取所有图表的分页列表，支持过滤和排序 |
 | `get_chart_params` | 获取图表的可视化参数（先调用此工具） |
 | `update_chart_params` | 更新图表可视化参数（在 get_chart_params 之后调用） |
+
+### 看板操作
+| 工具 | 描述 |
+|------|-------------|
+| `list_dashboards` | 获取分页的看板列表，支持过滤和排序 |
+| `get_dashboard_charts` | 获取特定看板中的所有图表及其信息 |
+| `get_dashboard_filters` | 获取看板的过滤器配置（原生过滤器、全局过滤器） |
+| `get_dashboard_chart_query_context` | 获取看板中图表的完整查询上下文（数据集ID、参数、应用的过滤器） |
 
 ## 📚 资源
 
@@ -273,6 +282,46 @@ npm start
 }
 ```
 
+### 图表管理
+
+#### 列出图表
+```json
+{
+  "tool": "list_charts",
+  "arguments": {
+    "page": 0,
+    "page_size": 20,
+    "order_column": "changed_on_dttm",
+    "order_direction": "desc"
+  }
+}
+```
+
+#### 带过滤条件列出图表
+```json
+{
+  "tool": "list_charts",
+  "arguments": {
+    "page": 0,
+    "page_size": 10,
+    "filters": [
+      {
+        "col": "viz_type",
+        "opr": "eq",
+        "value": "table"
+      },
+      {
+        "col": "slice_name",
+        "opr": "like",
+        "value": "%销售%"
+      }
+    ],
+    "order_column": "slice_name",
+    "order_direction": "asc"
+  }
+}
+```
+
 ### 图表可视化管理
 
 #### 获取图表可视化参数（步骤 1）
@@ -305,6 +354,83 @@ npm start
 ```
 
 **注意**: 始终先调用 `get_chart_params` 查看当前配置，然后再更新。params 的结构取决于图表的 `viz_type`。
+
+### 看板管理
+
+#### 列出看板
+```json
+{
+  "tool": "list_dashboards",
+  "arguments": {
+    "page": 0,
+    "page_size": 20,
+    "order_column": "changed_on_dttm",
+    "order_direction": "desc"
+  }
+}
+```
+
+#### 带过滤条件列出看板
+```json
+{
+  "tool": "list_dashboards",
+  "arguments": {
+    "page": 0,
+    "page_size": 10,
+    "filters": [
+      {
+        "col": "published",
+        "opr": "eq",
+        "value": true
+      },
+      {
+        "col": "dashboard_title",
+        "opr": "like",
+        "value": "%销售%"
+      }
+    ],
+    "order_column": "dashboard_title",
+    "order_direction": "asc"
+  }
+}
+```
+
+#### 获取看板中的所有图表
+```json
+{
+  "tool": "get_dashboard_charts",
+  "arguments": {
+    "dashboard_id": 5
+  }
+}
+```
+
+#### 获取看板过滤器配置
+```json
+{
+  "tool": "get_dashboard_filters",
+  "arguments": {
+    "dashboard_id": 5
+  }
+}
+```
+
+#### 获取看板中图表的完整查询上下文
+```json
+{
+  "tool": "get_dashboard_chart_query_context",
+  "arguments": {
+    "dashboard_id": 5,
+    "chart_id": 123
+  }
+}
+```
+
+此工具提供关于图表在特定看板中行为的最全面信息，包括：
+- 图表的数据集 ID 和名称
+- 图表的默认可视化参数
+- 应用于图表的所有看板级过滤器（原生过滤器、全局过滤器）
+- 合并图表设置与看板过滤器的最终查询上下文
 
 ## 📖 API 参考
 

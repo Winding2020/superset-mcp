@@ -5,6 +5,7 @@ import { MetricsClient } from "./metrics-client.js";
 import { ColumnsClient } from "./columns-client.js";
 import { SqlClient } from "./sql-client.js";
 import { ChartClient } from "./chart-client.js";
+import { DashboardClient } from "./dashboard-client.js";
 
 /**
  * Main Superset API client that composes all specialized client modules
@@ -16,6 +17,7 @@ export class SupersetClient extends BaseSuperset {
   public readonly columns: ColumnsClient;
   public readonly sql: SqlClient;
   public readonly charts: ChartClient;
+  public readonly dashboards: DashboardClient;
 
   constructor(config: SupersetConfig) {
     super(config);
@@ -26,5 +28,6 @@ export class SupersetClient extends BaseSuperset {
     this.columns = new ColumnsClient(config);
     this.sql = new SqlClient(config);
     this.charts = new ChartClient(config);
+    this.dashboards = new DashboardClient(config);
   }
 } 
