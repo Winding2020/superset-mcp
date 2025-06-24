@@ -61,7 +61,7 @@ export const dashboardToolDefinitions = [
   },
   {
     name: "get_dashboard_chart_query_context",
-    description: "Get the complete query context for a specific chart in a dashboard, including the chart's dataset ID, default parameters, and all applied dashboard filters (native filters and global filters). This combines the chart's saved configuration with the dashboard's filter settings to show the final query scope.",
+    description: "Get the complete query context for a specific chart in a dashboard, including the chart's dataset ID, used metrics with their SQL expressions, calculated columns, and all applied dashboard filters. This tool provides comprehensive information about the chart's data sources and query structure.",
     inputSchema: {
       type: "object",
       properties: {
@@ -193,8 +193,222 @@ export async function handleDashboardTool(toolName: string, args: any) {
         responseText += `Dataset ID: ${queryContext.dataset_id}\n`;
         responseText += `Dataset Name: ${queryContext.dataset_name}\n\n`;
         
-        // Chart default parameters
-        responseText += `Chart Default Parameters:\n`;
+        // Dataset details
+        if (queryContext.dataset_details) {
+          responseText += `Dataset Details:\n`;
+          responseText += `  Table Name: ${queryContext.dataset_details.table_name}\n`;
+          responseText += `  Schema: ${queryContext.dataset_details.schema || 'N/A'}\n`;
+          responseText += `  Database: ${queryContext.dataset_details.database?.database_name || 'N/A'}\n`;
+          responseText += `  Description: ${queryContext.dataset_details.description || 'N/A'}\n`;
+          
+          // Check if this is a virtual dataset (has custom SQL)
+          const isVirtualDataset = queryContext.dataset_details.sql && queryContext.dataset_details.sql.trim() !== '';
+          responseText += `  Dataset Type: ${isVirtualDataset ? 'Virtual (SQL-based)' : 'Physical Table'}\n`;
+          
+          if (isVirtualDataset) {
+            responseText += `  Virtual SQL Definition:\n`;
+            responseText += `${queryContext.dataset_details.sql}\n`;
+          }
+          responseText += `\n`;
+        }
+        
+        // Used metrics with SQL expressions
+        if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
+          responseText += `Used Metrics (${queryContext.used_metrics.length}):\n`;
+          queryContext.used_metrics.forEach((metric, index) => {
+            responseText += `  ${index + 1}. ${metric.metric_name}\n`;
+            responseText += `     Expression: ${metric.expression}\n`;
+            responseText += `     Type: ${metric.metric_type || 'N/A'}\n`;
+            responseText += `     Source: ${metric.is_adhoc ? 'Ad-hoc (defined in chart)' : 'Predefined (from dataset)'}\n`;
+            responseText += `     Description: ${metric.description || 'N/A'}\n`;
+            responseText += `     Verbose Name: ${metric.verbose_name || 'N/A'}\n`;
+            responseText += `     Format: ${metric.d3format || 'N/A'}\n`;
+            responseText += `     ---\n`;
+          });
+          responseText += `\n`;
+        } else {
+          responseText += `Used Metrics: None specified in chart configuration\n\n`;
+        }
+        
+        // Calculated columns
+        if (queryContext.calculated_columns && queryContext.calculated_columns.length > 0) {
+          responseText += `Calculated Columns (${queryContext.calculated_columns.length}):\n`;
+          queryContext.calculated_columns.forEach((column, index) => {
+            responseText += `  ${index + 1}. ${column.column_name}\n`;
+            responseText += `     Expression: ${column.expression}\n`;
+            responseText += `     Type: ${column.type || 'N/A'}\n`;
+            responseText += `     Description: ${column.description || 'N/A'}\n`;
+            responseText += `     Verbose Name: ${column.verbose_name || 'N/A'}\n`;
+            responseText += `     Filterable: ${column.filterable ? 'Yes' : 'No'}\n`;
+            responseText += `     Groupable: ${column.groupby ? 'Yes' : 'No'}\n`;
+            responseText += `     ---\n`;
+          });
+          responseText += `\n`;
+        } else {
+          responseText += `Calculated Columns: None found in dataset\n\n`;
+        }
+        
+        // Query structure analysis
+        responseText += `Query Structure Analysis:\n`;
+        responseText += `  Chart Type: ${queryContext.default_params.viz_type || 'Unknown'}\n`;
+        
+        // Analyze grouping
+        const groupby = queryContext.default_params.groupby || [];
+        if (groupby.length > 0) {
+          responseText += `  Group By Columns: ${groupby.join(', ')}\n`;
+        } else {
+          responseText += `  Group By Columns: None (aggregated result)\n`;
+        }
+        
+        // Analyze metrics usage
+        if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
+          responseText += `  Metrics Usage:\n`;
+          queryContext.used_metrics.forEach(metric => {
+            responseText += `    - ${metric.metric_name}: ${metric.expression}\n`;
+          });
+        }
+        
+        // Analyze time dimension
+        if (queryContext.default_params.granularity_sqla) {
+          responseText += `  Time Dimension: ${queryContext.default_params.granularity_sqla}\n`;
+        }
+        
+        // Analyze time range
+        if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
+          responseText += `  Time Range: ${queryContext.default_params.time_range}\n`;
+        }
+        
+        // Analyze filters
+        const adhocFilters = queryContext.default_params.adhoc_filters || [];
+        if (adhocFilters.length > 0) {
+          responseText += `  Chart-level Filters: ${adhocFilters.length} filter(s)\n`;
+          adhocFilters.forEach((filter: any, index: number) => {
+            responseText += `    ${index + 1}. ${filter.clause || 'WHERE'}: ${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}\n`;
+          });
+        }
+        
+        // Analyze row limit
+        if (queryContext.default_params.row_limit) {
+          responseText += `  Row Limit: ${queryContext.default_params.row_limit}\n`;
+        }
+        
+        // Generate equivalent SQL structure
+        responseText += `\nEquivalent SQL Structure:\n`;
+        responseText += `SELECT\n`;
+        
+        // Add groupby columns
+        if (groupby.length > 0) {
+          groupby.forEach((col: string) => {
+            responseText += `  ${col},\n`;
+          });
+        }
+        
+        // Add metrics
+        if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
+          queryContext.used_metrics.forEach(metric => {
+            responseText += `  ${metric.expression} AS "${metric.metric_name}"\n`;
+          });
+        }
+        
+        // Handle FROM clause - check if it's a virtual dataset
+        const isVirtualDataset = queryContext.dataset_details?.sql && queryContext.dataset_details.sql.trim() !== '';
+        if (isVirtualDataset) {
+          responseText += `FROM (\n`;
+          // Indent the virtual SQL
+          const indentedSQL = queryContext.dataset_details.sql
+            .split('\n')
+            .map((line: string) => `  ${line}`)
+            .join('\n');
+          responseText += `${indentedSQL}\n`;
+          responseText += `) AS virtual_dataset\n`;
+        } else {
+          responseText += `FROM ${queryContext.dataset_details?.schema || 'public'}.${queryContext.dataset_details?.table_name || 'unknown_table'}\n`;
+        }
+        
+        // Add WHERE conditions
+        const whereConditions = [];
+        if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
+          whereConditions.push(`${queryContext.default_params.granularity_sqla} ${queryContext.default_params.time_range}`);
+        }
+        if (adhocFilters.length > 0) {
+          adhocFilters.forEach((filter: any) => {
+            whereConditions.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
+          });
+        }
+        if (whereConditions.length > 0) {
+          responseText += `WHERE ${whereConditions.join(' AND ')}\n`;
+        }
+        
+        // Add GROUP BY
+        if (groupby.length > 0) {
+          responseText += `GROUP BY ${groupby.join(', ')}\n`;
+        }
+        
+        // Add LIMIT
+        if (queryContext.default_params.row_limit) {
+          responseText += `LIMIT ${queryContext.default_params.row_limit}\n`;
+        }
+        
+        responseText += `\n`;
+        
+        // Full expanded SQL (for virtual datasets)
+        if (isVirtualDataset) {
+          responseText += `Full Expanded SQL Query:\n`;
+          responseText += `-- This is how Superset would execute the query against the database\n`;
+          responseText += `WITH virtual_dataset AS (\n`;
+          const indentedVirtualSQL = queryContext.dataset_details.sql
+            .split('\n')
+            .map((line: string) => `  ${line}`)
+            .join('\n');
+          responseText += `${indentedVirtualSQL}\n`;
+          responseText += `)\n`;
+          responseText += `SELECT\n`;
+          
+          // Add groupby columns
+          if (groupby.length > 0) {
+            groupby.forEach((col: string) => {
+              responseText += `  ${col},\n`;
+            });
+          }
+          
+          // Add metrics
+          if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
+            queryContext.used_metrics.forEach(metric => {
+              responseText += `  ${metric.expression} AS "${metric.metric_name}"\n`;
+            });
+          }
+          
+          responseText += `FROM virtual_dataset\n`;
+          
+          // Add WHERE conditions for expanded query
+          const whereConditions = [];
+          if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
+            whereConditions.push(`${queryContext.default_params.granularity_sqla} ${queryContext.default_params.time_range}`);
+          }
+          if (adhocFilters.length > 0) {
+            adhocFilters.forEach((filter: any) => {
+              whereConditions.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
+            });
+          }
+          if (whereConditions.length > 0) {
+            responseText += `WHERE ${whereConditions.join(' AND ')}\n`;
+          }
+          
+          // Add GROUP BY for expanded query
+          if (groupby.length > 0) {
+            responseText += `GROUP BY ${groupby.join(', ')}\n`;
+          }
+          
+          // Add LIMIT for expanded query
+          if (queryContext.default_params.row_limit) {
+            responseText += `LIMIT ${queryContext.default_params.row_limit}\n`;
+          }
+          
+          responseText += `\n`;
+        }
+        
+        // Chart default parameters (detailed)
+        responseText += `Chart Default Parameters (Full Details):\n`;
         responseText += `${JSON.stringify(queryContext.default_params, null, 2)}\n\n`;
         
         // Dashboard filters

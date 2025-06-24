@@ -400,6 +400,9 @@ export interface DashboardQueryContext {
   chart_name: string;
   dataset_id: number;
   dataset_name: string;
+  dataset_details?: any;
+  used_metrics: any[];
+  calculated_columns: any[];
   default_params: any;
   dashboard_filters: DashboardFilterConfig;
   applied_filters: Array<{

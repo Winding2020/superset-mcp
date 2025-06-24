@@ -148,7 +148,7 @@ npm start
 | `list_dashboards` | Get paginated list of all dashboards with filtering and sorting |
 | `get_dashboard_charts` | Get all charts in a specific dashboard with their information |
 | `get_dashboard_filters` | Get dashboard's filter configuration (native filters, global filters) |
-| `get_dashboard_chart_query_context` | Get complete query context for a chart in dashboard (dataset ID, params, applied filters) |
+| `get_dashboard_chart_query_context` | Get complete query context for a chart in dashboard (dataset ID, used metrics with SQL expressions, calculated columns, applied filters) |
 
 ## 📚 Resources
 
@@ -429,7 +429,9 @@ Access read-only overviews through MCP resources:
 ```
 
 This tool provides the most comprehensive information about how a chart behaves within a specific dashboard, including:
-- Chart's dataset ID and name
+- Chart's dataset ID and detailed dataset information (table name, schema, database)
+- Used metrics with their SQL expressions (both predefined and ad-hoc metrics)
+- Calculated columns with their expressions from the dataset
 - Chart's default visualization parameters
 - All dashboard-level filters (native filters, global filters) that apply to the chart
 - Final merged query context that combines chart settings with dashboard filters

@@ -67,6 +67,7 @@ export class DashboardClient extends BaseSuperset {
 
   /**
    * Get chart query context from dashboard - combines chart params with dashboard filters
+   * and provides detailed information about metrics and dataset structure
    */
   async getChartQueryContext(dashboardId: string | number, chartId: number): Promise<DashboardQueryContext> {
     await this.ensureAuthenticated();
@@ -83,6 +84,10 @@ export class DashboardClient extends BaseSuperset {
         throw new Error(`Chart ${chartId} not found in dashboard ${dashboardId}`);
       }
 
+      // Get detailed chart information
+      const chartResponse = await this.api.get(`/api/v1/chart/${chartId}`);
+      const detailedChart = chartResponse.data.result;
+
       // Parse dashboard filters
       let dashboardFilters: DashboardFilterConfig = {};
       if (dashboard.json_metadata) {
@@ -91,17 +96,94 @@ export class DashboardClient extends BaseSuperset {
 
       // Parse chart params
       let defaultParams: any = {};
-      if (targetChart.params) {
+      if (detailedChart.params) {
         try {
-          defaultParams = JSON.parse(targetChart.params);
+          defaultParams = JSON.parse(detailedChart.params);
         } catch (error) {
           console.warn(`Failed to parse chart params for chart ${chartId}:`, error);
         }
       }
 
       // Extract dataset information
-      const datasetId = targetChart.datasource_id || 0;
-      const datasetName = targetChart.datasource_name || 'Unknown';
+      let datasetId = targetChart.datasource_id || 0;
+      let datasetName = targetChart.datasource_name || 'Unknown';
+      
+      // Try to extract dataset ID from datasource field in params if not available
+      if (datasetId === 0 && defaultParams.datasource) {
+        const datasourceMatch = defaultParams.datasource.match(/^(\d+)__/);
+        if (datasourceMatch) {
+          datasetId = parseInt(datasourceMatch[1]);
+        }
+      }
+
+      // Get dataset details including metrics and columns if dataset exists
+      let datasetDetails: any = null;
+      let usedMetrics: any[] = [];
+      let calculatedColumns: any[] = [];
+      
+      if (datasetId > 0) {
+        try {
+          const datasetResponse = await this.api.get(`/api/v1/dataset/${datasetId}`);
+          datasetDetails = datasetResponse.data.result;
+          
+          // Extract metrics used in the chart
+          const chartMetrics = defaultParams.metrics || [];
+          
+          // Handle ad-hoc metrics (single metric in params)
+          const adHocMetrics = [];
+          if (defaultParams.metric && typeof defaultParams.metric === 'object') {
+            adHocMetrics.push({
+              metric_name: defaultParams.metric.label || 'Ad-hoc Metric',
+              expression: defaultParams.metric.sqlExpression || 
+                         (defaultParams.metric.aggregate && defaultParams.metric.column ? 
+                          `${defaultParams.metric.aggregate}(${defaultParams.metric.column.column_name})` : 
+                          'Unknown'),
+              metric_type: defaultParams.metric.aggregate || 'CUSTOM',
+              description: 'Ad-hoc metric defined in chart configuration',
+              verbose_name: defaultParams.metric.label,
+              is_adhoc: true
+            });
+          }
+          
+          // Handle multiple ad-hoc metrics
+          if (Array.isArray(chartMetrics)) {
+            chartMetrics.forEach(metric => {
+              if (typeof metric === 'object' && metric.expressionType) {
+                adHocMetrics.push({
+                  metric_name: metric.label || 'Ad-hoc Metric',
+                  expression: metric.sqlExpression || 
+                             (metric.aggregate && metric.column ? 
+                              `${metric.aggregate}(${metric.column.column_name})` : 
+                              'Unknown'),
+                  metric_type: metric.aggregate || 'CUSTOM',
+                  description: 'Ad-hoc metric defined in chart configuration',
+                  verbose_name: metric.label,
+                  is_adhoc: true
+                });
+              }
+            });
+          }
+          
+          // Get predefined metrics from dataset
+          if (datasetDetails.metrics) {
+            const predefinedMetrics = datasetDetails.metrics.filter((metric: any) => 
+              chartMetrics.includes(metric.metric_name) || chartMetrics.includes(metric.id)
+            );
+            usedMetrics = [...predefinedMetrics, ...adHocMetrics];
+          } else {
+            usedMetrics = adHocMetrics;
+          }
+          
+          // Get calculated columns
+          if (datasetDetails.columns) {
+            calculatedColumns = datasetDetails.columns.filter((col: any) => 
+              col.expression && col.expression.trim() !== ''
+            );
+          }
+        } catch (error) {
+          console.warn(`Failed to get dataset details for dataset ${datasetId}:`, error);
+        }
+      }
 
       // Build applied filters from dashboard configuration
       const appliedFilters = [];
@@ -144,6 +226,9 @@ export class DashboardClient extends BaseSuperset {
         chart_name: targetChart.slice_name,
         dataset_id: datasetId,
         dataset_name: datasetName,
+        dataset_details: datasetDetails,
+        used_metrics: usedMetrics,
+        calculated_columns: calculatedColumns,
         default_params: defaultParams,
         dashboard_filters: dashboardFilters,
         applied_filters: appliedFilters,
