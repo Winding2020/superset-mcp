@@ -133,6 +133,12 @@ npm start
 |------|-------------|
 | `list_databases` | 获取所有配置的数据库连接 |
 
+### 图表操作
+| 工具 | 描述 |
+|------|-------------|
+| `get_chart_params` | 获取图表的可视化参数（先调用此工具） |
+| `update_chart_params` | 更新图表可视化参数（在 get_chart_params 之后调用） |
+
 ## 📚 资源
 
 通过 MCP 资源访问只读概览：
@@ -266,6 +272,39 @@ npm start
   }
 }
 ```
+
+### 图表可视化管理
+
+#### 获取图表可视化参数（步骤 1）
+```json
+{
+  "tool": "get_chart_params",
+  "arguments": {
+    "chart_id": 123
+  }
+}
+```
+
+#### 更新图表可视化参数（步骤 2）
+```json
+{
+  "tool": "update_chart_params",
+  "arguments": {
+    "chart_id": 123,
+    "params": {
+      "color_scheme": "supersetColors",
+      "show_legend": true,
+      "x_axis_format": "smart_date",
+      "y_axis_format": "$,.2f",
+      "show_bar_value": true,
+      "bar_stacked": false,
+      "order_bars": true
+    }
+  }
+}
+```
+
+**注意**: 始终先调用 `get_chart_params` 查看当前配置，然后再更新。params 的结构取决于图表的 `viz_type`。
 
 ## 📖 API 参考
 

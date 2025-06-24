@@ -30,6 +30,7 @@ export { DatasetClient } from './dataset-client.js';
 export { MetricsClient } from './metrics-client.js';
 export { ColumnsClient } from './columns-client.js';
 export { SqlClient } from './sql-client.js';
+export { ChartClient } from './chart-client.js';
 
 // Type definitions
 export { 

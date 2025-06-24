@@ -466,6 +466,52 @@ export async function handleToolCall(request: any) {
         };
       }
       
+      case "get_chart_params": {
+        const { chart_id } = request.params.arguments as any;
+        const params = await client.charts.getChartParams(chart_id);
+        
+        // Also get basic chart info for context
+        const chart = await client.charts.getChart(chart_id);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Chart ${chart_id} visualization parameters:\n\n` +
+                `Chart Name: ${chart.slice_name}\n` +
+                `Visualization Type: ${chart.viz_type}\n\n` +
+                `Current Parameters:\n` +
+                `${JSON.stringify(params, null, 2)}\n\n` +
+                `Note: The structure of params depends on the viz_type. Common fields include:\n` +
+                `- color_scheme: Color palette for the chart\n` +
+                `- show_legend: Whether to display legend\n` +
+                `- x_axis_format: Format for X axis labels\n` +
+                `- y_axis_format: Format for Y axis labels\n` +
+                `- metric: Metric(s) to display\n` +
+                `- groupby: Dimension(s) to group by`
+            },
+          ],
+        };
+      }
+      
+      case "update_chart_params": {
+        const { chart_id, params } = request.params.arguments as any;
+        const updatedChart = await client.charts.updateChartParams(chart_id, params);
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Chart ${chart_id} visualization parameters updated successfully!\n\n` +
+                `Chart Name: ${updatedChart.slice_name}\n` +
+                `Visualization Type: ${updatedChart.viz_type}\n\n` +
+                `Updated Parameters:\n` +
+                `${JSON.stringify(params, null, 2)}`
+            },
+          ],
+        };
+      }
+      
       default:
         throw new Error(`Unknown tool: ${request.params.name}`);
     }

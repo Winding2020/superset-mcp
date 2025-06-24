@@ -433,4 +433,37 @@ export const toolDefinitions = [
       required: ["dataset_id", "column_id"],
     },
   },
+  {
+    name: "get_chart_params",
+    description: "Get visualization parameters (params) of a chart. This tool should be called FIRST before updating chart visualization settings. The params contain all visualization-specific configurations like colors, axes, legends, etc. The structure varies based on the chart's viz_type.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chart_id: {
+          type: "number",
+          description: "Chart ID",
+        },
+      },
+      required: ["chart_id"],
+    },
+  },
+  {
+    name: "update_chart_params",
+    description: "Update visualization parameters (params) of a chart. Call get_chart_params FIRST to see the current configuration, then modify the params object and use this tool to apply changes. This updates ONLY the visualization settings, not the chart's metadata like name or description.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chart_id: {
+          type: "number",
+          description: "Chart ID",
+        },
+        params: {
+          type: "object",
+          description: "Complete params object with your modifications. The structure depends on viz_type. Common fields include: color_scheme, show_legend, x_axis_format, y_axis_format, etc.",
+          additionalProperties: true,
+        },
+      },
+      required: ["chart_id", "params"],
+    },
+  },
 ]; 

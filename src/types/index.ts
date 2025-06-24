@@ -136,4 +136,50 @@ export interface CalculatedColumn {
   extra?: string;
   advanced_data_type?: string;
   python_date_format?: string;
+}
+
+// Chart data structure
+export interface Chart {
+  id: number;
+  slice_name: string;
+  viz_type: string;
+  params?: string;
+  query_context?: string;
+  query_context_generation?: boolean;
+  cache_timeout?: number;
+  certification_details?: string;
+  certified_by?: string;
+  dashboards?: number[];
+  datasource_id?: number;
+  datasource_type?: string;
+  description?: string;
+  external_url?: string;
+  is_managed_externally?: boolean;
+  owners?: Array<{ id: number; username: string }>;
+  tags?: number[];
+}
+
+// Chart params structure (parsed from JSON string)
+export interface ChartParams {
+  [key: string]: any;  // Dynamic structure based on viz_type
+}
+
+// Chart update request
+export interface ChartUpdateRequest {
+  slice_name?: string;
+  viz_type?: string;
+  params?: string;
+  query_context?: string;
+  query_context_generation?: boolean;
+  cache_timeout?: number;
+  certification_details?: string;
+  certified_by?: string;
+  dashboards?: number[];
+  datasource_id?: number;
+  datasource_type?: string;
+  description?: string;
+  external_url?: string;
+  is_managed_externally?: boolean;
+  owners?: number[];
+  tags?: number[];
 } 

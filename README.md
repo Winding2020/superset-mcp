@@ -135,6 +135,12 @@ npm start
 |------|-------------|
 | `list_databases` | Get all configured database connections |
 
+### Chart Operations
+| Tool | Description |
+|------|-------------|
+| `get_chart_params` | Get visualization parameters of a chart (call this FIRST) |
+| `update_chart_params` | Update chart visualization parameters (call AFTER get_chart_params) |
+
 ## 📚 Resources
 
 Access read-only overviews through MCP resources:
@@ -268,6 +274,39 @@ Access read-only overviews through MCP resources:
   }
 }
 ```
+
+### Chart Visualization Management
+
+#### Get Chart Visualization Parameters (Step 1)
+```json
+{
+  "tool": "get_chart_params",
+  "arguments": {
+    "chart_id": 123
+  }
+}
+```
+
+#### Update Chart Visualization Parameters (Step 2)
+```json
+{
+  "tool": "update_chart_params",
+  "arguments": {
+    "chart_id": 123,
+    "params": {
+      "color_scheme": "supersetColors",
+      "show_legend": true,
+      "x_axis_format": "smart_date",
+      "y_axis_format": "$,.2f",
+      "show_bar_value": true,
+      "bar_stacked": false,
+      "order_bars": true
+    }
+  }
+}
+```
+
+**Note**: Always call `get_chart_params` first to see the current configuration before updating. The params structure varies based on the chart's `viz_type`.
 
 ## 📖 API Reference
 
