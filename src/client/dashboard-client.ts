@@ -55,6 +55,34 @@ export class DashboardClient extends BaseSuperset {
   }
 
   /**
+   * Get detailed chart information
+   */
+  async getChartDetails(chartId: number): Promise<any> {
+    await this.ensureAuthenticated();
+    
+    try {
+      const response = await this.api.get(`/api/v1/chart/${chartId}`);
+      return response.data.result;
+    } catch (error) {
+      throw new Error(`Failed to get chart details for ${chartId}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Get dataset information
+   */
+  async getDatasetDetails(datasetId: number): Promise<any> {
+    await this.ensureAuthenticated();
+    
+    try {
+      const response = await this.api.get(`/api/v1/dataset/${datasetId}`);
+      return response.data.result;
+    } catch (error) {
+      throw new Error(`Failed to get dataset details for ${datasetId}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
    * Parse dashboard filter configuration from json_metadata
    */
   parseDashboardFilters(jsonMetadata: string): DashboardFilterConfig {

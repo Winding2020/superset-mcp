@@ -473,11 +473,88 @@ export async function handleDashboardTool(toolName: string, args: any) {
         const { dashboard_id } = args;
         const dashboardCharts = await client.dashboards.getDashboardCharts(dashboard_id);
         
+        // Get detailed information for each chart to get dataset info
+        const chartsWithDatasetInfo = await Promise.all(
+          dashboardCharts.result.map(async (chart) => {
+            try {
+              // Get detailed chart information to get dataset info
+              const detailedChart = await client.dashboards.getChartDetails(chart.id);
+              
+              // Extract dataset information from detailed chart
+              let datasetId = 'N/A';
+              let datasetName = 'N/A';
+              let datasetType = 'N/A';
+              
+              // Try to get dataset info from datasource_id and datasource_type
+              if (detailedChart.datasource_id && detailedChart.datasource_type) {
+                datasetId = detailedChart.datasource_id.toString();
+                datasetType = detailedChart.datasource_type;
+                
+                // Try to get dataset name from datasource_name or by querying dataset
+                if (detailedChart.datasource_name) {
+                  datasetName = detailedChart.datasource_name;
+                } else if (detailedChart.datasource_type === 'table') {
+                  try {
+                    const datasetDetails = await client.dashboards.getDatasetDetails(detailedChart.datasource_id);
+                    datasetName = datasetDetails.table_name || 'Unknown';
+                  } catch (error) {
+                    console.warn(`Failed to get dataset name for dataset ${detailedChart.datasource_id}:`, error);
+                  }
+                }
+              }
+              
+              // If still no dataset info, try to parse from params
+              if (datasetId === 'N/A' && detailedChart.params) {
+                try {
+                  const params = JSON.parse(detailedChart.params);
+                  if (params.datasource) {
+                    const datasourceMatch = params.datasource.match(/^(\d+)__(.+)$/);
+                    if (datasourceMatch) {
+                      datasetId = datasourceMatch[1];
+                      datasetType = 'table';
+                      // Try to get dataset name
+                      try {
+                        const datasetDetails = await client.dashboards.getDatasetDetails(parseInt(datasetId));
+                        datasetName = datasetDetails.table_name || 'Unknown';
+                      } catch (error) {
+                        console.warn(`Failed to get dataset name for dataset ${datasetId}:`, error);
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.warn(`Failed to parse chart params for chart ${chart.id}:`, error);
+                }
+              }
+              
+              return {
+                ...chart,
+                viz_type: detailedChart.viz_type || 'undefined',
+                datasource_id: datasetId,
+                datasource_name: datasetName,
+                datasource_type: datasetType,
+                description: detailedChart.description,
+                cache_timeout: detailedChart.cache_timeout,
+                last_saved_at: detailedChart.changed_on,
+                is_managed_externally: detailedChart.is_managed_externally || false
+              };
+            } catch (error) {
+              console.warn(`Failed to get detailed info for chart ${chart.id}:`, error);
+              return {
+                ...chart,
+                viz_type: 'undefined',
+                datasource_id: 'N/A',
+                datasource_name: 'N/A',
+                datasource_type: 'N/A'
+              };
+            }
+          })
+        );
+        
         // Format the response text
         let responseText = `Dashboard ${dashboard_id} Charts:\n\n`;
-        responseText += `Found ${dashboardCharts.result.length} charts:\n\n`;
+        responseText += `Found ${chartsWithDatasetInfo.length} charts:\n\n`;
         
-        dashboardCharts.result.forEach((chart, index) => {
+        chartsWithDatasetInfo.forEach((chart, index) => {
           responseText += `${index + 1}. Chart ID: ${chart.id}\n`;
           responseText += `   Name: ${chart.slice_name}\n`;
           responseText += `   Type: ${chart.viz_type}\n`;
