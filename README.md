@@ -141,6 +141,8 @@ npm start
 | `list_charts` | Get paginated list of all charts with filtering and sorting |
 | `get_chart_params` | Get visualization parameters of a chart (call this FIRST) |
 | `update_chart_params` | Update chart visualization parameters (call AFTER get_chart_params) |
+| `get_chart_filters` | Get current data filters applied to a chart |
+| `set_chart_filters` | Set data filters for a chart (permanently updates the chart) |
 
 ### Dashboard Operations
 | Tool | Description |
@@ -356,6 +358,66 @@ Access read-only overviews through MCP resources:
 ```
 
 **Note**: Always call `get_chart_params` first to see the current configuration before updating. The params structure varies based on the chart's `viz_type`.
+
+### Chart Data Filtering
+
+#### Get Current Chart Filters
+```json
+{
+  "tool": "get_chart_filters",
+  "arguments": {
+    "chart_id": 123
+  }
+}
+```
+
+#### Set Chart Data Filters
+```json
+{
+  "tool": "set_chart_filters",
+  "arguments": {
+    "chart_id": 123,
+    "filters": [
+      {
+        "col": "country",
+        "op": "IN",
+        "val": ["USA", "Canada", "Mexico"]
+      },
+      {
+        "col": "sales_amount",
+        "op": ">",
+        "val": 1000
+      },
+      {
+        "col": "date_created",
+        "op": "TEMPORAL_RANGE",
+        "val": "2024-01-01 : 2024-12-31"
+      }
+    ]
+  }
+}
+```
+
+#### Clear All Chart Filters
+```json
+{
+  "tool": "set_chart_filters",
+  "arguments": {
+    "chart_id": 123,
+    "filters": []
+  }
+}
+```
+
+**Filter Operators Reference:**
+- `==`, `!=`, `>`, `<`, `>=`, `<=`: Comparison operators
+- `LIKE`, `NOT LIKE`, `ILIKE`: Text pattern matching (`%` for wildcards)
+- `IN`, `NOT IN`: Value list matching (val should be an array)
+- `IS NULL`, `IS NOT NULL`: Null value checking (no val needed)
+- `IS TRUE`, `IS FALSE`: Boolean value checking (no val needed)
+- `TEMPORAL_RANGE`: Time range filtering (val format: "start : end")
+
+**Note**: Chart filters are applied at the data level and permanently modify the chart's query context. This affects what data is retrieved from the datasource for all future chart renders.
 
 ### Dashboard Management
 

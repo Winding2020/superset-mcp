@@ -132,6 +132,19 @@ export class DashboardClient extends BaseSuperset {
         }
       }
 
+      // Parse chart query_context if available (this may contain filters set via API)
+      let queryContextFilters: any[] = [];
+      if (detailedChart.query_context) {
+        try {
+          const queryContext = JSON.parse(detailedChart.query_context);
+          if (queryContext.queries && queryContext.queries.length > 0) {
+            queryContextFilters = queryContext.queries[0].filters || [];
+          }
+        } catch (error) {
+          console.warn(`Failed to parse chart query_context for chart ${chartId}:`, error);
+        }
+      }
+
       // Extract dataset information
       let datasetId = targetChart.datasource_id || 0;
       let datasetName = targetChart.datasource_name || 'Unknown';
@@ -240,9 +253,17 @@ export class DashboardClient extends BaseSuperset {
         }
       }
 
+      // Merge filters from different sources
+      const allFilters = [
+        ...(defaultParams.adhoc_filters || []),
+        ...queryContextFilters
+      ];
+
       // Build final query context (this would be the merged result)
       const finalQueryContext = {
         ...defaultParams,
+        // Include all filters (from params and query_context)
+        adhoc_filters: allFilters,
         // Dashboard filters would override or supplement chart params
         dashboard_id: typeof dashboardId === 'string' ? parseInt(dashboardId) : dashboardId,
         applied_dashboard_filters: appliedFilters
@@ -258,6 +279,7 @@ export class DashboardClient extends BaseSuperset {
         used_metrics: usedMetrics,
         calculated_columns: calculatedColumns,
         default_params: defaultParams,
+        query_context_filters: queryContextFilters,
         dashboard_filters: dashboardFilters,
         applied_filters: appliedFilters,
         final_query_context: finalQueryContext

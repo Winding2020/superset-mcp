@@ -92,6 +92,63 @@ export const chartToolDefinitions = [
       required: ["chart_id", "params"],
     },
   },
+  {
+    name: "get_chart_filters",
+    description: "Get current data filters applied to a chart. This extracts filters from the chart's query context or form data. Use this tool to see what filters are currently applied before modifying them.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chart_id: {
+          type: "number",
+          description: "Chart ID",
+        },
+      },
+      required: ["chart_id"],
+    },
+  },
+  {
+    name: "set_chart_filters",
+    description: "Set data filters for a chart. This permanently updates the chart's query context with the specified filters. Filters are applied at the data level, affecting what data is retrieved from the datasource.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chart_id: {
+          type: "number",
+          description: "Chart ID",
+        },
+        filters: {
+          type: "array",
+          description: "Array of filter conditions to apply to the chart data",
+          items: {
+            type: "object",
+            properties: {
+              col: {
+                description: "Column name to filter on (string) or adhoc column object",
+              },
+              op: {
+                type: "string",
+                description: "Filter operator",
+                enum: ["==", "!=", ">", "<", ">=", "<=", "LIKE", "NOT LIKE", "ILIKE", "IS NULL", "IS NOT NULL", "IN", "NOT IN", "IS TRUE", "IS FALSE", "TEMPORAL_RANGE"],
+              },
+              val: {
+                description: "Value(s) to compare against. Can be string, number, boolean, array, or null depending on operator",
+              },
+              grain: {
+                type: "string",
+                description: "Optional time grain for temporal filters (e.g., 'PT1M', 'P1D')",
+              },
+              isExtra: {
+                type: "boolean",
+                description: "Optional flag indicating if filter was added by filter component",
+              },
+            },
+            required: ["col", "op"],
+          },
+        },
+      },
+      required: ["chart_id", "filters"],
+    },
+  },
 ];
 
 // Chart tool handlers
@@ -207,6 +264,100 @@ export async function handleChartTool(toolName: string, args: any) {
                 `Visualization Type: ${updatedChart.viz_type}\n\n` +
                 `Updated Parameters:\n` +
                 `${JSON.stringify(params, null, 2)}`
+            },
+          ],
+        };
+      }
+      
+      case "get_chart_filters": {
+        const { chart_id } = args;
+        const filters = await client.charts.getChartFilters(chart_id);
+        
+        // Also get basic chart info for context
+        const chart = await client.charts.getChart(chart_id);
+        
+        let responseText = `Chart ${chart_id} current data filters:\n\n`;
+        responseText += `Chart Name: ${chart.slice_name}\n`;
+        responseText += `Visualization Type: ${chart.viz_type}\n\n`;
+        
+        if (filters.length === 0) {
+          responseText += `No data filters are currently applied to this chart.\n\n`;
+        } else {
+          responseText += `Current Filters (${filters.length}):\n`;
+          filters.forEach((filter: any, index: number) => {
+            responseText += `${index + 1}. Column: ${typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col)}\n`;
+            responseText += `   Operator: ${filter.op}\n`;
+            if (filter.val !== undefined) {
+              responseText += `   Value: ${Array.isArray(filter.val) ? JSON.stringify(filter.val) : filter.val}\n`;
+            }
+            if (filter.grain) {
+              responseText += `   Time Grain: ${filter.grain}\n`;
+            }
+            if (filter.isExtra) {
+              responseText += `   Added by Filter Component: Yes\n`;
+            }
+            responseText += `   ---\n`;
+          });
+        }
+        
+        responseText += `\nFilter Operators Reference:\n`;
+        responseText += `- ==, !=, >, <, >=, <=: Comparison operators\n`;
+        responseText += `- LIKE, NOT LIKE, ILIKE: Text pattern matching\n`;
+        responseText += `- IN, NOT IN: Value list matching\n`;
+        responseText += `- IS NULL, IS NOT NULL: Null value checking\n`;
+        responseText += `- IS TRUE, IS FALSE: Boolean value checking\n`;
+        responseText += `- TEMPORAL_RANGE: Time range filtering\n`;
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText
+            },
+          ],
+        };
+      }
+      
+      case "set_chart_filters": {
+        const { chart_id, filters } = args;
+        
+        // Validate filters
+        for (const filter of filters) {
+          if (!filter.col || !filter.op) {
+            throw new Error(`Invalid filter: both 'col' and 'op' are required. Got: ${JSON.stringify(filter)}`);
+          }
+        }
+        
+        const updatedChart = await client.charts.setChartFilters(chart_id, filters);
+        
+        let responseText = `Chart ${chart_id} filters updated successfully!\n\n`;
+        responseText += `Chart Name: ${updatedChart.slice_name}\n`;
+        responseText += `Visualization Type: ${updatedChart.viz_type}\n\n`;
+        
+        if (filters.length === 0) {
+          responseText += `All data filters have been removed from this chart.\n`;
+        } else {
+          responseText += `Applied Filters (${filters.length}):\n`;
+          filters.forEach((filter: any, index: number) => {
+            responseText += `${index + 1}. Column: ${typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col)}\n`;
+            responseText += `   Operator: ${filter.op}\n`;
+            if (filter.val !== undefined) {
+              responseText += `   Value: ${Array.isArray(filter.val) ? JSON.stringify(filter.val) : filter.val}\n`;
+            }
+            if (filter.grain) {
+              responseText += `   Time Grain: ${filter.grain}\n`;
+            }
+            responseText += `   ---\n`;
+          });
+        }
+        
+        responseText += `\nNote: These filters are now permanently applied to the chart and will affect all future data queries for this chart.`;
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText
             },
           ],
         };

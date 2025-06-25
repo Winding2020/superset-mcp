@@ -280,10 +280,21 @@ export async function handleDashboardTool(toolName: string, args: any) {
         
         // Analyze filters
         const adhocFilters = queryContext.default_params.adhoc_filters || [];
-        if (adhocFilters.length > 0) {
-          responseText += `  Chart-level Filters: ${adhocFilters.length} filter(s)\n`;
+        const queryContextFilters = queryContext.query_context_filters || [];
+        const totalFilters = adhocFilters.length + queryContextFilters.length;
+        
+        if (totalFilters > 0) {
+          responseText += `  Chart-level Filters: ${totalFilters} filter(s)\n`;
+          
+          // Show adhoc filters from params
           adhocFilters.forEach((filter: any, index: number) => {
             responseText += `    ${index + 1}. ${filter.clause || 'WHERE'}: ${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}\n`;
+          });
+          
+          // Show filters from query_context (set via API)
+          queryContextFilters.forEach((filter: any, index: number) => {
+            const filterIndex = adhocFilters.length + index + 1;
+            responseText += `    ${filterIndex}. WHERE: ${typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col)} ${filter.op} ${filter.val !== undefined ? JSON.stringify(filter.val) : 'N/A'}\n`;
           });
         }
         
@@ -335,6 +346,13 @@ export async function handleDashboardTool(toolName: string, args: any) {
             whereConditions.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
           });
         }
+        if (queryContextFilters.length > 0) {
+          queryContextFilters.forEach((filter: any) => {
+            const col = typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col);
+            const val = filter.val !== undefined ? JSON.stringify(filter.val) : 'N/A';
+            whereConditions.push(`${col} ${filter.op} ${val}`);
+          });
+        }
         if (whereConditions.length > 0) {
           responseText += `WHERE ${whereConditions.join(' AND ')}\n`;
         }
@@ -381,17 +399,24 @@ export async function handleDashboardTool(toolName: string, args: any) {
           responseText += `FROM virtual_dataset\n`;
           
           // Add WHERE conditions for expanded query
-          const whereConditions = [];
+          const whereConditionsExpanded = [];
           if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
-            whereConditions.push(`${queryContext.default_params.granularity_sqla} ${queryContext.default_params.time_range}`);
+            whereConditionsExpanded.push(`${queryContext.default_params.granularity_sqla} ${queryContext.default_params.time_range}`);
           }
           if (adhocFilters.length > 0) {
             adhocFilters.forEach((filter: any) => {
-              whereConditions.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
+              whereConditionsExpanded.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
             });
           }
-          if (whereConditions.length > 0) {
-            responseText += `WHERE ${whereConditions.join(' AND ')}\n`;
+          if (queryContextFilters.length > 0) {
+            queryContextFilters.forEach((filter: any) => {
+              const col = typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col);
+              const val = filter.val !== undefined ? JSON.stringify(filter.val) : 'N/A';
+              whereConditionsExpanded.push(`${col} ${filter.op} ${val}`);
+            });
+          }
+          if (whereConditionsExpanded.length > 0) {
+            responseText += `WHERE ${whereConditionsExpanded.join(' AND ')}\n`;
           }
           
           // Add GROUP BY for expanded query

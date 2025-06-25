@@ -28,6 +28,8 @@ const toolRoutes = {
   "list_charts": handleChartTool,
   "get_chart_params": handleChartTool,
   "update_chart_params": handleChartTool,
+  "get_chart_filters": handleChartTool,
+  "set_chart_filters": handleChartTool,
   
   // Dataset tools
   "list_datasets": handleDatasetTool,

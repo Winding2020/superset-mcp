@@ -188,6 +188,98 @@ export interface ChartUpdateRequest {
   tags?: number[];
 }
 
+// Chart data filter structure
+export interface ChartDataFilter {
+  col: string | any; // Column name or adhoc column object
+  op: '==' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'NOT LIKE' | 'ILIKE' | 'IS NULL' | 'IS NOT NULL' | 'IN' | 'NOT IN' | 'IS TRUE' | 'IS FALSE' | 'TEMPORAL_RANGE';
+  val?: any; // Value(s) to compare against
+  grain?: string; // Optional time grain for temporal filters
+  isExtra?: boolean; // Indicates if filter was added by filter component
+}
+
+// Chart data query object
+export interface ChartDataQueryObject {
+  datasource?: {
+    id: number;
+    type: string;
+  };
+  filters?: ChartDataFilter[];
+  columns?: any[];
+  metrics?: any[];
+  groupby?: any[];
+  granularity?: string;
+  granularity_sqla?: string;
+  is_timeseries?: boolean;
+  is_rowcount?: boolean;
+  row_limit?: number;
+  row_offset?: number;
+  order_desc?: boolean;
+  orderby?: any[];
+  extras?: any;
+  annotation_layers?: any[];
+  applied_time_extras?: any;
+  apply_fetch_values_predicate?: boolean;
+  having?: string;
+  post_processing?: any[];
+  result_type?: 'columns' | 'full' | 'query' | 'results' | 'samples' | 'timegrains' | 'post_processed' | 'drill_detail';
+  series_columns?: any[];
+  series_limit?: number;
+  series_limit_metric?: any;
+  time_range?: string;
+  time_shift?: string;
+  url_params?: any;
+}
+
+// Chart data query context
+export interface ChartDataQueryContext {
+  datasource: {
+    id: number;
+    type: string;
+  };
+  queries: ChartDataQueryObject[];
+  form_data?: any;
+  result_format?: 'csv' | 'json' | 'xlsx';
+  result_type?: 'columns' | 'full' | 'query' | 'results' | 'samples' | 'timegrains' | 'post_processed' | 'drill_detail';
+  force?: boolean;
+  custom_cache_timeout?: number;
+}
+
+// Chart data response
+export interface ChartDataResponse {
+  result: Array<{
+    query: string;
+    status: string;
+    error?: string;
+    stacktrace?: string;
+    data?: any[];
+    columns?: Array<{
+      name: string;
+      type: string;
+      is_date?: boolean;
+    }>;
+    applied_filters?: Array<{
+      column: string;
+      operator: string;
+      value: any;
+    }>;
+    rejected_filters?: Array<{
+      column: string;
+      operator: string;
+      value: any;
+      reason: string;
+    }>;
+    cache_key?: string;
+    cached_dttm?: string;
+    cache_timeout?: number;
+    annotation_data?: any;
+    rowcount?: number;
+    from_dttm?: number;
+    to_dttm?: number;
+    is_cached?: boolean;
+  }>;
+  message?: string;
+}
+
 // Chart list query parameters
 export interface ChartListQuery {
   page?: number;
@@ -404,6 +496,7 @@ export interface DashboardQueryContext {
   used_metrics: any[];
   calculated_columns: any[];
   default_params: any;
+  query_context_filters: any[];
   dashboard_filters: DashboardFilterConfig;
   applied_filters: Array<{
     filter_id: string;
