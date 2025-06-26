@@ -38,6 +38,9 @@ const toolRoutes = {
   "update_dataset": handleDatasetTool,
   "delete_dataset": handleDatasetTool,
   "refresh_dataset_schema": handleDatasetTool,
+  "add_dataset_column": handleDatasetTool,
+  "update_dataset_column": handleDatasetTool,
+  "remove_dataset_column": handleDatasetTool,
   
   // Metric tools
   "get_dataset_metrics": handleMetricTool,
