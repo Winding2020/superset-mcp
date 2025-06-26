@@ -41,6 +41,7 @@ const toolRoutes = {
   "add_dataset_column": handleDatasetTool,
   "update_dataset_column": handleDatasetTool,
   "remove_dataset_column": handleDatasetTool,
+  "find_and_replace_in_jinja": handleDatasetTool,
   
   // Metric tools
   "get_dataset_metrics": handleMetricTool,

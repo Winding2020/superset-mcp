@@ -229,6 +229,28 @@ export const datasetToolDefinitions = [
       required: ["dataset_id", "column_alias"],
     },
   },
+  {
+    name: "find_and_replace_in_jinja",
+    description: "Finds and replaces text exclusively within the Jinja template blocks of a virtual dataset's SQL query. This is useful for renaming variables or changing logic within Jinja templates without affecting the surrounding SQL.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dataset_id: {
+          type: "number",
+          description: "ID of the dataset to modify.",
+        },
+        find_string: {
+          type: "string",
+          description: "The exact string to find within the Jinja blocks. This is a simple text search, not a regex.",
+        },
+        replace_string: {
+          type: "string",
+          description: "The string to replace all occurrences of the found text with.",
+        },
+      },
+      required: ["dataset_id", "find_string", "replace_string"],
+    },
+  },
 ];
 
 // Dataset tool handlers
@@ -301,7 +323,8 @@ export async function handleDatasetTool(toolName: string, args: any) {
         if (dataset.sql) {
           try {
             // NOTE: We parse the protected SQL, but display the original SQL.
-            const { protectedSql } = protectJinja(dataset.sql);
+            const jinjaBlocks: string[] = [];
+            const protectedSql = protectJinja(dataset.sql, jinjaBlocks);
             const parser = new NodeSQLParser.Parser();
             const astResult = parser.astify(protectedSql);
             // We only process the first statement if multiple are present
@@ -429,7 +452,8 @@ export async function handleDatasetTool(toolName: string, args: any) {
             throw new Error(`Dataset ${dataset_id} does not have a virtual SQL query to modify.`);
         }
 
-        const { protectedSql, blocks } = protectJinja(dataset.sql);
+        const jinjaBlocks: string[] = [];
+        const protectedSql = protectJinja(dataset.sql, jinjaBlocks);
         const astResult = parser.astify(protectedSql);
         const ast = Array.isArray(astResult) ? astResult[0] : astResult;
         
@@ -441,15 +465,18 @@ export async function handleDatasetTool(toolName: string, args: any) {
             throw new Error(`Can only modify SELECT statements. Found: ${ast.type}`);
         }
         
+        // Protect the new column expression, adding its blocks to the SAME array
+        const protectedNewExpression = protectJinja(column_expression, jinjaBlocks);
+        
         // Create a dummy query to parse the new column expression
-        const dummySql = `SELECT ${column_expression} AS ${column_alias} FROM dummy_table`;
+        const dummySql = `SELECT ${protectedNewExpression} AS ${column_alias} FROM dummy_table`;
         const dummyAst = parser.astify(dummySql);
         const newColumnAst = (dummyAst as any).columns[0];
 
         (ast as any).columns.push(newColumnAst);
         
         const modifiedSql = parser.sqlify(ast);
-        const newSql = restoreJinja(modifiedSql, blocks);
+        const newSql = restoreJinja(modifiedSql, jinjaBlocks);
         await client.datasets.updateDataset(dataset_id, { sql: newSql });
 
         return {
@@ -466,7 +493,8 @@ export async function handleDatasetTool(toolName: string, args: any) {
             throw new Error(`Dataset ${dataset_id} does not have a virtual SQL query to modify.`);
         }
 
-        const { protectedSql, blocks } = protectJinja(dataset.sql);
+        const jinjaBlocks: string[] = [];
+        const protectedSql = protectJinja(dataset.sql, jinjaBlocks);
         const astResult = parser.astify(protectedSql);
         const ast = Array.isArray(astResult) ? astResult[0] : astResult;
 
@@ -483,15 +511,18 @@ export async function handleDatasetTool(toolName: string, args: any) {
             throw new Error(`Column with alias '${old_column_alias}' not found in dataset ${dataset_id}.`);
         }
         
+        // Protect the new column expression, adding its blocks to the SAME array
+        const protectedNewExpression = protectJinja(new_column_expression, jinjaBlocks);
+        
         // Create a dummy query to parse the new column expression
-        const dummySql = `SELECT ${new_column_expression} AS ${new_column_alias} FROM dummy_table`;
+        const dummySql = `SELECT ${protectedNewExpression} AS ${new_column_alias} FROM dummy_table`;
         const dummyAst = parser.astify(dummySql);
         const newColumnAst = (dummyAst as any).columns[0];
 
         (ast as any).columns[columnIndex] = newColumnAst;
         
         const modifiedSql = parser.sqlify(ast);
-        const newSql = restoreJinja(modifiedSql, blocks);
+        const newSql = restoreJinja(modifiedSql, jinjaBlocks);
         await client.datasets.updateDataset(dataset_id, { sql: newSql });
 
         return {
@@ -508,7 +539,8 @@ export async function handleDatasetTool(toolName: string, args: any) {
             throw new Error(`Dataset ${dataset_id} does not have a virtual SQL query to modify.`);
         }
 
-        const { protectedSql, blocks } = protectJinja(dataset.sql);
+        const jinjaBlocks: string[] = [];
+        const protectedSql = protectJinja(dataset.sql, jinjaBlocks);
         const astResult = parser.astify(protectedSql);
         const ast = Array.isArray(astResult) ? astResult[0] : astResult;
         
@@ -528,11 +560,39 @@ export async function handleDatasetTool(toolName: string, args: any) {
         }
 
         const modifiedSql = parser.sqlify(ast);
-        const newSql = restoreJinja(modifiedSql, blocks);
+        const newSql = restoreJinja(modifiedSql, jinjaBlocks);
         await client.datasets.updateDataset(dataset_id, { sql: newSql });
 
         return {
             content: [{ type: "text", text: `Successfully removed column '${column_alias}' from dataset ${dataset_id}. New SQL is:\n${newSql}` }],
+        };
+      }
+      
+      case "find_and_replace_in_jinja": {
+        const { dataset_id, find_string, replace_string } = args;
+        const client = initializeSupersetClient();
+        const dataset = await client.datasets.getDataset(dataset_id);
+        if (!dataset.sql) {
+            throw new Error(`Dataset ${dataset_id} does not have a virtual SQL query to modify or does not contain any Jinja templates.`);
+        }
+
+        const jinjaBlocks: string[] = [];
+        const protectedSql = protectJinja(dataset.sql, jinjaBlocks);
+        
+        if (jinjaBlocks.length === 0) {
+            return {
+                content: [{ type: "text", text: `No Jinja blocks were found in dataset ${dataset_id}. No changes made.` }],
+            };
+        }
+
+        // Using split/join for a safe, global replacement without dealing with regex escaping.
+        const modifiedJinjaBlocks = jinjaBlocks.map(block => block.split(find_string).join(replace_string));
+        
+        const newSql = restoreJinja(protectedSql, modifiedJinjaBlocks);
+        await client.datasets.updateDataset(dataset_id, { sql: newSql });
+
+        return {
+            content: [{ type: "text", text: `Successfully performed find/replace in Jinja templates for dataset ${dataset_id}. New SQL is:\n${newSql}` }],
         };
       }
       

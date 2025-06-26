@@ -1,18 +1,19 @@
-const JINJA_REGEX = /({{[\s\S]*?}})|({%[\s\S]*?%})/g;
+const JINJA_REGEX = /({{[\s\S]*?}})|({%[\s\S]*?%})|({#[\s\S]*?#})/g;
+const JINJA_PLACEHOLDER_REGEX = /\/\*__JINJA_BLOCK_(\d+)__\*\//g;
 
 /**
  * Replaces Jinja template blocks with placeholders.
  * @param sql The SQL string with Jinja templates.
- * @returns An object with the protected SQL and an array of the original Jinja blocks.
+ * @param blocks An array to which the extracted Jinja blocks will be appended.
+ * @returns The SQL string with placeholders.
  */
-export function protectJinja(sql: string): { protectedSql: string; blocks: string[] } {
-  const blocks: string[] = [];
-  const protectedSql = sql.replace(JINJA_REGEX, (match) => {
+export function protectJinja(sql: string, blocks: string[]): string {
+  if (!sql) return '';
+  return sql.replace(JINJA_REGEX, (match) => {
     const placeholder = `/*__JINJA_BLOCK_${blocks.length}__*/`;
     blocks.push(match);
     return placeholder;
   });
-  return { protectedSql, blocks };
 }
 
 /**
@@ -22,10 +23,10 @@ export function protectJinja(sql: string): { protectedSql: string; blocks: strin
  * @returns The SQL string with Jinja templates restored.
  */
 export function restoreJinja(sql: string, blocks: string[]): string {
-  let restoredSql = sql;
-  blocks.forEach((block, index) => {
-    const placeholder = new RegExp(`\\/\\*__JINJA_BLOCK_${index}__\\*\\/`, 'g');
-    restoredSql = restoredSql.replace(placeholder, block);
+  if (!sql) return '';
+  return sql.replace(JINJA_PLACEHOLDER_REGEX, (match, blockIndex) => {
+    const index = parseInt(blockIndex, 10);
+    // Return original placeholder if index is out of bounds, though this shouldn't happen in normal operation.
+    return blocks[index] ?? match;
   });
-  return restoredSql;
 } 
