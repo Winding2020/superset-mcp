@@ -236,12 +236,18 @@ export class DashboardClient extends BaseSuperset {
           
           if (appliesToChart && filter.targets) {
             for (const target of filter.targets) {
-              if (target.datasetId === datasetId) {
+              // For virtual datasets, also check if the filter column exists in the dataset SQL
+              const columnInDataset = target.datasetId === datasetId || 
+                                     (datasetDetails?.sql && datasetDetails.sql.includes(target.column.name));
+              
+              if (columnInDataset) {
                 appliedFilters.push({
                   filter_id: filter.id,
+                  filter_name: filter.name,
                   filter_type: filter.filterType,
                   column: target.column.name,
                   value: filter.defaultDataMask?.filterState || null,
+                  default_value: filter.defaultDataMask?.filterState || null,
                   scope: {
                     charts: filter.chartsInScope || [],
                     tabs: filter.tabsInScope || []

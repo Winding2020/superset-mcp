@@ -185,224 +185,135 @@ export async function handleDashboardTool(toolName: string, args: any) {
         const { dashboard_id, chart_id } = args;
         const queryContext = await client.dashboards.getChartQueryContext(dashboard_id, chart_id);
         
-        // Format the response text
+        // Format the response text - focused on SQL construction information
         let responseText = `Dashboard Chart Query Context:\n\n`;
         responseText += `Dashboard ID: ${queryContext.dashboard_id}\n`;
         responseText += `Chart ID: ${queryContext.chart_id}\n`;
         responseText += `Chart Name: ${queryContext.chart_name}\n`;
-        responseText += `Dataset ID: ${queryContext.dataset_id}\n`;
-        responseText += `Dataset Name: ${queryContext.dataset_name}\n\n`;
+        responseText += `Dataset ID: ${queryContext.dataset_id}\n\n`;
         
-        // Dataset details
+        // Dataset details - essential for SQL construction
         if (queryContext.dataset_details) {
           responseText += `Dataset Details:\n`;
           responseText += `  Table Name: ${queryContext.dataset_details.table_name}\n`;
           responseText += `  Schema: ${queryContext.dataset_details.schema || 'N/A'}\n`;
           responseText += `  Database: ${queryContext.dataset_details.database?.database_name || 'N/A'}\n`;
-          responseText += `  Description: ${queryContext.dataset_details.description || 'N/A'}\n`;
+          responseText += `  Dataset Type: ${queryContext.dataset_details.sql ? 'Virtual (SQL-based)' : 'Physical (Table-based)'}\n`;
           
-          // Check if this is a virtual dataset (has custom SQL)
-          const isVirtualDataset = queryContext.dataset_details.sql && queryContext.dataset_details.sql.trim() !== '';
-          responseText += `  Dataset Type: ${isVirtualDataset ? 'Virtual (SQL-based)' : 'Physical Table'}\n`;
-          
-          if (isVirtualDataset) {
-            responseText += `  Virtual SQL Definition:\n`;
-            responseText += `${queryContext.dataset_details.sql}\n`;
+          if (queryContext.dataset_details.sql) {
+            responseText += `  Virtual SQL Definition:\n${queryContext.dataset_details.sql}\n\n`;
+          } else {
+            responseText += `\n`;
           }
-          responseText += `\n`;
         }
         
-        // Used metrics with SQL expressions
-        if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
+        // Used metrics - essential for SELECT clause
+        if (queryContext.used_metrics.length > 0) {
           responseText += `Used Metrics (${queryContext.used_metrics.length}):\n`;
           queryContext.used_metrics.forEach((metric, index) => {
             responseText += `  ${index + 1}. ${metric.metric_name}\n`;
             responseText += `     Expression: ${metric.expression}\n`;
             responseText += `     Type: ${metric.metric_type || 'N/A'}\n`;
-            responseText += `     Source: ${metric.is_adhoc ? 'Ad-hoc (defined in chart)' : 'Predefined (from dataset)'}\n`;
-            responseText += `     Description: ${metric.description || 'N/A'}\n`;
-            responseText += `     Verbose Name: ${metric.verbose_name || 'N/A'}\n`;
-            responseText += `     Format: ${metric.d3format || 'N/A'}\n`;
+            responseText += `     Source: ${metric.is_adhoc ? 'Ad-hoc (from chart)' : 'Predefined (from dataset)'}\n`;
+            if (metric.description) {
+              responseText += `     Description: ${metric.description}\n`;
+            }
+            if (metric.d3format) {
+              responseText += `     Format: ${metric.d3format}\n`;
+            }
             responseText += `     ---\n`;
           });
           responseText += `\n`;
         } else {
-          responseText += `Used Metrics: None specified in chart configuration\n\n`;
+          responseText += `Used Metrics: None found\n\n`;
         }
         
-        // Calculated columns
-        if (queryContext.calculated_columns && queryContext.calculated_columns.length > 0) {
-          responseText += `Calculated Columns (${queryContext.calculated_columns.length}):\n`;
-          queryContext.calculated_columns.forEach((column, index) => {
-            responseText += `  ${index + 1}. ${column.column_name}\n`;
-            responseText += `     Expression: ${column.expression}\n`;
-            responseText += `     Type: ${column.type || 'N/A'}\n`;
-            responseText += `     Description: ${column.description || 'N/A'}\n`;
-            responseText += `     Verbose Name: ${column.verbose_name || 'N/A'}\n`;
-            responseText += `     Filterable: ${column.filterable ? 'Yes' : 'No'}\n`;
-            responseText += `     Groupable: ${column.groupby ? 'Yes' : 'No'}\n`;
-            responseText += `     ---\n`;
-          });
-          responseText += `\n`;
-        } else {
+        // Calculated columns - may affect query structure
+        if (queryContext.calculated_columns.length > 0) {
           responseText += `Calculated Columns: None found in dataset\n\n`;
         }
         
-        // Query structure analysis
+        // Query structure analysis - essential for understanding chart logic
         responseText += `Query Structure Analysis:\n`;
-        responseText += `  Chart Type: ${queryContext.default_params.viz_type || 'Unknown'}\n`;
+        responseText += `  Chart Type: ${queryContext.default_params.viz_type}\n`;
         
-        // Analyze grouping
         const groupby = queryContext.default_params.groupby || [];
         if (groupby.length > 0) {
           responseText += `  Group By Columns: ${groupby.join(', ')}\n`;
-        } else {
-          responseText += `  Group By Columns: None (aggregated result)\n`;
         }
         
-        // Analyze metrics usage
-        if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
+        const metrics = queryContext.default_params.metrics || [];
+                 if (metrics.length > 0) {
           responseText += `  Metrics Usage:\n`;
-          queryContext.used_metrics.forEach(metric => {
-            responseText += `    - ${metric.metric_name}: ${metric.expression}\n`;
+          metrics.forEach((metric: any) => {
+            const metricInfo = queryContext.used_metrics.find(m => m.metric_name === metric || m.id === metric);
+            if (metricInfo) {
+              responseText += `    - ${metricInfo.metric_name}: ${metricInfo.expression}\n`;
+            } else {
+              responseText += `    - ${metric}: Unknown expression\n`;
+            }
           });
         }
         
-        // Analyze time dimension
-        if (queryContext.default_params.granularity_sqla) {
-          responseText += `  Time Dimension: ${queryContext.default_params.granularity_sqla}\n`;
-        }
-        
-        // Analyze time range
-        if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
-          responseText += `  Time Range: ${queryContext.default_params.time_range}\n`;
-        }
-        
-        // Analyze filters
         const adhocFilters = queryContext.default_params.adhoc_filters || [];
         const queryContextFilters = queryContext.query_context_filters || [];
-        const totalFilters = adhocFilters.length + queryContextFilters.length;
+        const allFilters = [...adhocFilters, ...queryContextFilters];
         
-        if (totalFilters > 0) {
-          responseText += `  Chart-level Filters: ${totalFilters} filter(s)\n`;
-          
-          // Show adhoc filters from params
-          adhocFilters.forEach((filter: any, index: number) => {
-            responseText += `    ${index + 1}. ${filter.clause || 'WHERE'}: ${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}\n`;
-          });
-          
-          // Show filters from query_context (set via API)
-          queryContextFilters.forEach((filter: any, index: number) => {
-            const filterIndex = adhocFilters.length + index + 1;
-            responseText += `    ${filterIndex}. WHERE: ${typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col)} ${filter.op} ${filter.val !== undefined ? JSON.stringify(filter.val) : 'N/A'}\n`;
+        if (allFilters.length > 0) {
+          responseText += `  Chart-level Filters: ${allFilters.length} filter(s)\n`;
+          allFilters.forEach((filter, index) => {
+            if (filter.operator || filter.op) {
+              const operator = filter.operator || filter.op;
+              const subject = filter.subject || (typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col));
+              const comparator = filter.comparator || filter.val;
+              responseText += `    ${index + 1}. WHERE: ${subject} ${operator} ${JSON.stringify(comparator)}\n`;
+            }
           });
         }
         
-        // Analyze row limit
         if (queryContext.default_params.row_limit) {
           responseText += `  Row Limit: ${queryContext.default_params.row_limit}\n`;
         }
         
-        // Generate equivalent SQL structure
-        responseText += `\nEquivalent SQL Structure:\n`;
-        responseText += `SELECT\n`;
-        
-        // Add groupby columns
-        if (groupby.length > 0) {
-          groupby.forEach((col: string) => {
-            responseText += `  ${col},\n`;
-          });
-        }
-        
-        // Add metrics
-        if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
-          queryContext.used_metrics.forEach(metric => {
-            responseText += `  ${metric.expression} AS "${metric.metric_name}"\n`;
-          });
-        }
-        
-        // Handle FROM clause - check if it's a virtual dataset
-        const isVirtualDataset = queryContext.dataset_details?.sql && queryContext.dataset_details.sql.trim() !== '';
-        if (isVirtualDataset) {
-          responseText += `FROM (\n`;
-          // Indent the virtual SQL
-          const indentedSQL = queryContext.dataset_details.sql
-            .split('\n')
-            .map((line: string) => `  ${line}`)
-            .join('\n');
-          responseText += `${indentedSQL}\n`;
-          responseText += `) AS virtual_dataset\n`;
-        } else {
-          responseText += `FROM ${queryContext.dataset_details?.schema || 'public'}.${queryContext.dataset_details?.table_name || 'unknown_table'}\n`;
-        }
-        
-        // Add WHERE conditions
-        const whereConditions = [];
-        if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
-          whereConditions.push(`${queryContext.default_params.granularity_sqla} ${queryContext.default_params.time_range}`);
-        }
-        if (adhocFilters.length > 0) {
-          adhocFilters.forEach((filter: any) => {
-            whereConditions.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
-          });
-        }
-        if (queryContextFilters.length > 0) {
-          queryContextFilters.forEach((filter: any) => {
-            const col = typeof filter.col === 'string' ? filter.col : JSON.stringify(filter.col);
-            const val = filter.val !== undefined ? JSON.stringify(filter.val) : 'N/A';
-            whereConditions.push(`${col} ${filter.op} ${val}`);
-          });
-        }
-        if (whereConditions.length > 0) {
-          responseText += `WHERE ${whereConditions.join(' AND ')}\n`;
-        }
-        
-        // Add GROUP BY
-        if (groupby.length > 0) {
-          responseText += `GROUP BY ${groupby.join(', ')}\n`;
-        }
-        
-        // Add LIMIT
-        if (queryContext.default_params.row_limit) {
-          responseText += `LIMIT ${queryContext.default_params.row_limit}\n`;
-        }
-        
         responseText += `\n`;
         
-        // Full expanded SQL (for virtual datasets)
-        if (isVirtualDataset) {
+        // Full expanded SQL query - the most important part for simulation
+        if (queryContext.dataset_details?.sql) {
           responseText += `Full Expanded SQL Query:\n`;
           responseText += `-- This is how Superset would execute the query against the database\n`;
           responseText += `WITH virtual_dataset AS (\n`;
-          const indentedVirtualSQL = queryContext.dataset_details.sql
-            .split('\n')
-            .map((line: string) => `  ${line}`)
-            .join('\n');
-          responseText += `${indentedVirtualSQL}\n`;
+          const sqlLines = queryContext.dataset_details.sql.split('\n');
+          sqlLines.forEach((line: string) => {
+            responseText += `  ${line}\n`;
+          });
           responseText += `)\n`;
           responseText += `SELECT\n`;
           
-          // Add groupby columns
+          // Add groupby columns for expanded query
           if (groupby.length > 0) {
             groupby.forEach((col: string) => {
               responseText += `  ${col},\n`;
             });
           }
           
-          // Add metrics
-          if (queryContext.used_metrics && queryContext.used_metrics.length > 0) {
-            queryContext.used_metrics.forEach(metric => {
-              responseText += `  ${metric.expression} AS "${metric.metric_name}"\n`;
+          // Add metrics for expanded query
+          if (metrics.length > 0) {
+            metrics.forEach((metric: any, index: number) => {
+              const metricInfo = queryContext.used_metrics.find(m => m.metric_name === metric || m.id === metric);
+              if (metricInfo) {
+                const isLast = index === metrics.length - 1;
+                responseText += `  ${metricInfo.expression} AS "${metricInfo.metric_name}"${isLast ? '' : ','}\n`;
+              } else {
+                const isLast = index === metrics.length - 1;
+                responseText += `  ${metric} AS "${metric}"${isLast ? '' : ','}\n`;
+              }
             });
           }
           
           responseText += `FROM virtual_dataset\n`;
           
           // Add WHERE conditions for expanded query
-          const whereConditionsExpanded = [];
-          if (queryContext.default_params.time_range && queryContext.default_params.time_range !== 'No filter') {
-            whereConditionsExpanded.push(`${queryContext.default_params.granularity_sqla} ${queryContext.default_params.time_range}`);
-          }
+          const whereConditionsExpanded: string[] = [];
           if (adhocFilters.length > 0) {
             adhocFilters.forEach((filter: any) => {
               whereConditionsExpanded.push(`${filter.subject} ${filter.operator} ${JSON.stringify(filter.comparator)}`);
@@ -432,56 +343,41 @@ export async function handleDashboardTool(toolName: string, args: any) {
           responseText += `\n`;
         }
         
-        // Chart default parameters (detailed)
-        responseText += `Chart Default Parameters (Full Details):\n`;
-        responseText += `${JSON.stringify(queryContext.default_params, null, 2)}\n\n`;
-        
-        // Dashboard filters
-        responseText += `Dashboard Filter Configuration:\n`;
-        if (queryContext.dashboard_filters.native_filter_configuration && 
-            queryContext.dashboard_filters.native_filter_configuration.length > 0) {
-          responseText += `Native Filters (${queryContext.dashboard_filters.native_filter_configuration.length}):\n`;
-          queryContext.dashboard_filters.native_filter_configuration.forEach((filter, index) => {
-            responseText += `  ${index + 1}. ${filter.name} (${filter.filterType})\n`;
-            responseText += `     ID: ${filter.id}\n`;
-            responseText += `     Description: ${filter.description || 'N/A'}\n`;
-            responseText += `     Targets: ${filter.targets?.length || 0} dataset(s)\n`;
-            if (filter.targets) {
-              filter.targets.forEach(target => {
-                responseText += `       - Dataset ${target.datasetId}, Column: ${target.column.name}\n`;
-              });
-            }
-            responseText += `     Charts in Scope: ${filter.chartsInScope?.length || 0}\n`;
-            responseText += `     Tabs in Scope: ${filter.tabsInScope?.length || 0}\n`;
-          });
-        } else {
-          responseText += `No native filters configured.\n`;
-        }
-        
-        // Global chart configuration
-        if (queryContext.dashboard_filters.global_chart_configuration) {
-          responseText += `\nGlobal Chart Configuration:\n`;
-          Object.entries(queryContext.dashboard_filters.global_chart_configuration).forEach(([chartId, config]) => {
-            responseText += `  Chart ${chartId}: ${JSON.stringify(config, null, 4)}\n`;
-          });
-        }
-        
-        // Applied filters
-        responseText += `\nApplied Filters for This Chart:\n`;
+        // Applied dashboard filters - essential for understanding data filtering
+        responseText += `Dashboard Filters Applied to This Chart:\n`;
         if (queryContext.applied_filters.length > 0) {
-          queryContext.applied_filters.forEach((filter, index) => {
-            responseText += `  ${index + 1}. Filter: ${filter.filter_id}\n`;
-            responseText += `     Type: ${filter.filter_type}\n`;
-            responseText += `     Column: ${filter.column}\n`;
-            responseText += `     Value: ${JSON.stringify(filter.value)}\n`;
-            responseText += `     Scope - Charts: ${filter.scope.charts.length}, Tabs: ${filter.scope.tabs.length}\n`;
-          });
+          const filtersWithValues = queryContext.applied_filters.filter(filter => 
+            filter.default_value && Object.keys(filter.default_value).length > 0 && 
+            filter.default_value.value && filter.default_value.value.length > 0
+          );
+          
+          if (filtersWithValues.length > 0) {
+            responseText += `Filters with Default Values (${filtersWithValues.length}):\n`;
+            filtersWithValues.forEach((filter, index) => {
+              const values = filter.default_value.value || [];
+              responseText += `  ${index + 1}. ${filter.column} = ${JSON.stringify(values)}\n`;
+            });
+            responseText += `\n`;
+          }
+          
+          const filtersWithoutValues = queryContext.applied_filters.filter(filter => 
+            !filter.default_value || Object.keys(filter.default_value).length === 0 || 
+            !filter.default_value.value || filter.default_value.value.length === 0
+          );
+          
+          if (filtersWithoutValues.length > 0) {
+            responseText += `Filters without Default Values (${filtersWithoutValues.length}):\n`;
+            filtersWithoutValues.forEach((filter, index) => {
+              responseText += `  ${index + 1}. ${filter.column} (no default)\n`;
+            });
+            responseText += `\n`;
+          }
         } else {
-          responseText += `No filters applied to this chart.\n`;
+          responseText += `No filters applied to this chart.\n\n`;
         }
         
-        // Final query context
-        responseText += `\nFinal Query Context (Merged):\n`;
+        // Final query context - essential for understanding complete configuration
+        responseText += `Final Query Context (Merged):\n`;
         responseText += `${JSON.stringify(queryContext.final_query_context, null, 2)}\n`;
         
         return {

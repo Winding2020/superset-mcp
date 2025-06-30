@@ -500,9 +500,11 @@ export interface DashboardQueryContext {
   dashboard_filters: DashboardFilterConfig;
   applied_filters: Array<{
     filter_id: string;
+    filter_name?: string;
     filter_type: string;
     column: string;
     value: any;
+    default_value?: any;
     scope: {
       charts: number[];
       tabs: string[];
