@@ -260,11 +260,6 @@ export function formatDatasetError(error: unknown, operation: string, datasetId?
           });
         }
         
-        // Add specific hint for dataset creation failure
-        if (operation === 'create_dataset' && response.status === 500) {
-          errorDetails += `\nHint: A '500 Fatal error' when creating a virtual dataset is often caused by invalid SQL. Please consider using the 'execute_sql' tool to validate your SQL query before creating the dataset.\n`;
-        }
-        
         return errorDetails;
       }
     }

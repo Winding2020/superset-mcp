@@ -1,7 +1,8 @@
 import { initializeSupersetClient } from "../client/index.js";
-import { getErrorMessage } from "../utils/error.js";
+import { getErrorMessage, formatSqlError } from "../utils/error.js";
 import NodeSQLParser from "node-sql-parser";
 import { protectJinja, restoreJinja } from "../utils/sql.js";
+import { AxiosError } from "axios";
 
 // Dataset tool definitions
 export const datasetToolDefinitions = [
@@ -382,20 +383,63 @@ export async function handleDatasetTool(toolName: string, args: any) {
       
       case "create_dataset": {
         const datasetData = args;
-        const newDataset = await client.datasets.createDataset(datasetData);
-        
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Dataset created successfully!\n\n` +
-                `ID: ${newDataset.id}\n` +
-                `Table Name: ${newDataset.table_name}\n` +
-                `Database ID: ${newDataset.database_id}\n` +
-                `Schema: ${newDataset.schema || 'N/A'}`
-            },
-          ],
-        };
+        try {
+          const newDataset = await client.datasets.createDataset(datasetData);
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Dataset created successfully!\n\n` +
+                  `ID: ${newDataset.id}\n` +
+                  `Table Name: ${newDataset.table_name}\n` +
+                  `Database ID: ${newDataset.database_id}\n` +
+                  `Schema: ${newDataset.schema || 'N/A'}`
+              },
+            ],
+          };
+        } catch (error) {
+          if (
+            error instanceof AxiosError &&
+            error.response?.status === 500 &&
+            datasetData.sql
+          ) {
+            // Likely an invalid SQL error. Try executing the SQL to get a better message.
+            try {
+              // Let's wrap the query to limit it and reduce cost.
+              let validationSql = datasetData.sql.trim();
+              if (validationSql.endsWith(';')) {
+                validationSql = validationSql.slice(0, -1);
+              }
+              // We wrap the user's query to apply a limit safely.
+              validationSql = `SELECT * FROM (${validationSql}) AS _superset_tools_validation LIMIT 1`;
+
+              await client.sql.executeSql({
+                database_id: datasetData.database_id,
+                sql: validationSql,
+              });
+              // If it somehow succeeds, the original error was something else.
+              throw error; 
+            } catch (sqlError) {
+              // This is the expected path. The SQL execution failed.
+              // We report the error with the *original* SQL.
+              const detailedError = getErrorMessage(sqlError);
+              
+              // Check if the error is already a formatted SQL error message
+              // to avoid double formatting.
+              if (detailedError.includes("SQL Execution Error")) {
+                throw new Error(detailedError);
+              }
+
+              const formattedError = formatSqlError(sqlError, datasetData.sql, datasetData.database_id);
+              const finalMessage = `${formattedError}`;
+              // Throw a new error that will be caught by the outer catch block
+              throw new Error(finalMessage);
+            }
+          }
+          // For other errors, re-throw to be caught by the main handler.
+          throw error;
+        }
       }
       
       case "update_dataset": {
