@@ -38,10 +38,7 @@ const toolRoutes = {
   "update_dataset": handleDatasetTool,
   "delete_dataset": handleDatasetTool,
   "refresh_dataset_schema": handleDatasetTool,
-  "add_dataset_column": handleDatasetTool,
-  "update_dataset_column": handleDatasetTool,
-  "remove_dataset_column": handleDatasetTool,
-  "find_and_replace_in_jinja": handleDatasetTool,
+  "find_and_replace_in_sql": handleDatasetTool,
   
   // Metric tools
   "get_dataset_metrics": handleMetricTool,
