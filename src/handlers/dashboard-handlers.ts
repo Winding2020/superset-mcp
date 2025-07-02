@@ -5,7 +5,7 @@ import { getErrorMessage } from "../utils/error.js";
 export const dashboardToolDefinitions = [
   {
     name: "list_dashboards",
-    description: "Get paginated list of all dashboards with optional filtering, sorting, and pagination. Uses Rison or JSON query parameters for filtering, sorting, pagination and for selecting specific columns and metadata. Query format: filters=[{col: 'column_name', opr: 'operator', value: 'filter_value'}], order_column='column_name', order_direction='asc|desc', page=0, page_size=20, select_columns=['column1', 'column2']",
+    description: "Get paginated list of all dashboards with optional filtering, sorting, and pagination. Uses Rison or JSON query parameters for filtering, sorting, pagination and for selecting specific columns and metadata.",
     inputSchema: {
       type: "object",
       properties: {
@@ -21,7 +21,7 @@ export const dashboardToolDefinitions = [
               },
               opr: {
                 type: "string",
-                description: "Filter operator (e.g., 'eq', 'like', 'in', 'gt', 'lt')",
+                description: "Filter operator (e.g., 'eq', 'in', 'gt', 'lt')",
               },
               value: {
                 description: "Filter value (can be string, number, boolean, or array)",

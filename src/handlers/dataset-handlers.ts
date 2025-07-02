@@ -6,7 +6,7 @@ import { AxiosError } from "axios";
 export const datasetToolDefinitions = [
   {
     name: "list_datasets",
-    description: "Retrieves a list of all datasets in Superset. Supports powerful filtering, sorting, and pagination. You can specify which columns to return, making it efficient for fetching just the needed information. For example, to find datasets with 'sales' in their name, you can use filters=[{col: 'table_name', opr: 'like', value: '%sales%'}]",
+    description: "Retrieves a list of all datasets in Superset. Supports powerful filtering, sorting, and pagination. You can specify which columns to return, making it efficient for fetching just the needed information.",
     inputSchema: {
       type: "object",
       properties: {
@@ -41,7 +41,7 @@ export const datasetToolDefinitions = [
               },
               opr: {
                 type: "string", 
-                description: "Filter operator (e.g., 'eq', 'like', 'in', 'gt', 'lt')",
+                description: "Filter operator (e.g., 'eq', 'in', 'gt', 'lt')",
               },
               value: {
                 description: "Filter value (can be string, number, boolean, or array)",
