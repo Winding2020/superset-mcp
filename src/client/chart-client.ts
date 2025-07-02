@@ -1,4 +1,4 @@
-import { Chart, ChartUpdateRequest, ChartListQuery, ChartListResponse, ChartDataQueryContext, ChartDataResponse, ChartDataFilter } from "../types/index.js";
+import { Chart, ChartCreateRequest, ChartUpdateRequest, ChartListQuery, ChartListResponse, ChartDataQueryContext, ChartDataResponse, ChartDataFilter } from "../types/index.js";
 import { BaseSuperset } from "./base-client.js";
 import { getErrorMessage } from "../utils/error.js";
 
@@ -42,6 +42,26 @@ export class ChartClient extends BaseSuperset {
   }
 
   /**
+   * Create a new chart
+   */
+  async createChart(chartData: ChartCreateRequest): Promise<Chart> {
+    try {
+      const response = await this.makeProtectedRequest({
+        method: 'POST',
+        url: '/api/v1/chart/',
+        data: chartData
+      });
+      // API returns { id: number, result: Chart }
+      // We need to merge the id into the result object
+      const chart = response.data.result;
+      chart.id = response.data.id;
+      return chart;
+    } catch (error) {
+      throw new Error(`Failed to create chart: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
    * Get chart visualization parameters
    * This is a convenience method that returns the parsed params object
    */
@@ -77,11 +97,18 @@ export class ChartClient extends BaseSuperset {
 
   /**
    * Update chart visualization parameters
-   * This is a convenience method that handles params serialization
+   * This is a convenience method that handles params serialization and viz_type extraction
    */
   async updateChartParams(chartId: number, params: any): Promise<Chart> {
     const paramsString = JSON.stringify(params);
-    return this.updateChart(chartId, { params: paramsString });
+    
+    // Extract viz_type from params if it exists
+    const updateRequest: ChartUpdateRequest = { params: paramsString };
+    if (params.viz_type) {
+      updateRequest.viz_type = params.viz_type;
+    }
+    
+    return this.updateChart(chartId, updateRequest);
   }
 
   /**

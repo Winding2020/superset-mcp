@@ -26,8 +26,10 @@ import { handleDashboardTool } from "./dashboard-handlers.js";
 const toolRoutes = {
   // Chart tools
   "list_charts": handleChartTool,
+  "create_chart": handleChartTool,
   "get_chart_params": handleChartTool,
-  "update_chart_params": handleChartTool,
+  "get_current_chart_config": handleChartTool,
+  "update_chart": handleChartTool,
   "get_chart_filters": handleChartTool,
   "set_chart_filters": handleChartTool,
   

@@ -153,19 +153,54 @@ export interface Chart {
   cache_timeout?: number;
   certification_details?: string;
   certified_by?: string;
-  dashboards?: number[];
+  changed_on_delta_humanized?: string; // From API
+  dashboards?: Array<{
+    id: number;
+    dashboard_title: string;
+    json_metadata?: string;
+  }>;
   datasource_id?: number;
   datasource_type?: string;
   description?: string;
   external_url?: string;
   is_managed_externally?: boolean;
-  owners?: Array<{ id: number; username: string }>;
-  tags?: number[];
+  owners?: Array<{
+    id: number;
+    first_name: string;
+    last_name: string;
+  }>;
+  tags?: Array<{
+    id: number;
+    name: string;
+    type: number;
+  }>;
+  thumbnail_url?: string; // From API
+  url?: string; // From API
 }
 
 // Chart params structure (parsed from JSON string)
 export interface ChartParams {
   [key: string]: any;  // Dynamic structure based on viz_type
+}
+
+// Chart create request
+export interface ChartCreateRequest {
+  slice_name: string; // Required
+  datasource_id: number; // Required
+  datasource_type: string; // Required
+  viz_type?: string;
+  params?: string;
+  query_context?: string;
+  query_context_generation?: boolean;
+  cache_timeout?: number;
+  certification_details?: string;
+  certified_by?: string;
+  dashboards?: number[];
+  datasource_name?: string;
+  description?: string;
+  external_url?: string;
+  is_managed_externally?: boolean;
+  owners?: number[];
 }
 
 // Chart update request
