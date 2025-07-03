@@ -26,15 +26,14 @@ export class MetricsClient extends BaseSuperset {
     }
   }
 
-  // Create dataset metric
-  async createDatasetMetric(datasetId: number, metric: Partial<DatasetMetric>): Promise<DatasetMetric> {
+  // Create dataset metrics
+  async createDatasetMetrics(datasetId: number, metrics: Partial<DatasetMetric>[]): Promise<void> {
     try {
       // First get current dataset
       const dataset = await this.datasetClient.getDataset(datasetId);
       const currentMetrics = dataset.metrics || [];
       
-      // Generate a temporary ID for new metric (negative number indicates newly created)
-      const newMetric = {
+      const newMetricsToAdd = metrics.map(metric => ({
         metric_name: metric.metric_name,
         expression: metric.expression,
         metric_type: metric.metric_type,
@@ -44,7 +43,7 @@ export class MetricsClient extends BaseSuperset {
         warning_text: metric.warning_text,
         extra: metric.extra,
         is_restricted: metric.is_restricted,
-      };
+      }));
       
       // Clean existing metrics, remove fields not accepted by API
       const cleanedCurrentMetrics = currentMetrics.map((m: any) => ({
@@ -60,39 +59,41 @@ export class MetricsClient extends BaseSuperset {
         is_restricted: m.is_restricted,
       }));
       
-      // Add new metric to metrics array
-      const newMetrics = [...cleanedCurrentMetrics, newMetric];
+      // Add new metrics to metrics array
+      const combinedMetrics = [...cleanedCurrentMetrics, ...newMetricsToAdd];
       
       // Update dataset
-      const response = await this.makeProtectedRequest({
+      await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
-        data: { metrics: newMetrics }
+        data: { metrics: combinedMetrics }
       });
-      
-      // Return newly created metric (usually the last one in the array)
-      const updatedMetrics = response.data.result.metrics || [];
-      return updatedMetrics[updatedMetrics.length - 1];
     } catch (error) {
-      throw new Error(`Failed to create dataset ${datasetId} metric: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to create dataset ${datasetId} metrics: ${getErrorMessage(error)}`);
     }
   }
 
-  // Update dataset metric
-  async updateDatasetMetric(datasetId: number, metricId: number, metric: Partial<DatasetMetric>): Promise<DatasetMetric> {
+  // Update dataset metrics
+  async updateDatasetMetrics(datasetId: number, updates: Array<{ metricId: number; metric: Partial<DatasetMetric> }>): Promise<DatasetMetric[]> {
     try {
       // Get current dataset
       const dataset = await this.datasetClient.getDataset(datasetId);
       const currentMetrics = dataset.metrics || [];
       
-      // Find and update specified metric
-      const metricIndex = currentMetrics.findIndex((m: any) => m.id === metricId);
-      if (metricIndex === -1) {
-        throw new Error(`Metric ${metricId} does not exist`);
+      // Create a map of metric IDs to updates for efficient lookup
+      const updateMap = new Map(updates.map(update => [update.metricId, update.metric]));
+      
+      // Check if all metrics to update exist
+      const missingMetrics = updates.filter(update => 
+        !currentMetrics.find((m: any) => m.id === update.metricId)
+      );
+      
+      if (missingMetrics.length > 0) {
+        throw new Error(`Metrics do not exist: ${missingMetrics.map(m => m.metricId).join(', ')}`);
       }
       
-      // Clean existing metrics, remove fields not accepted by API
-      const cleanedMetrics = currentMetrics.map((m: any, index: number) => {
+      // Clean and update metrics
+      const updatedMetrics = currentMetrics.map((m: any) => {
         const cleanedMetric = {
           id: m.id,
           metric_name: m.metric_name,
@@ -106,12 +107,13 @@ export class MetricsClient extends BaseSuperset {
           is_restricted: m.is_restricted,
         };
         
-        // If this is the metric to update, apply updates
-        if (index === metricIndex) {
+        // If this metric has updates, apply them
+        const update = updateMap.get(m.id);
+        if (update) {
           return {
             ...cleanedMetric,
             ...Object.fromEntries(
-              Object.entries(metric).filter(([_, value]) => value !== undefined)
+              Object.entries(update).filter(([_, value]) => value !== undefined)
             )
           };
         }
@@ -123,33 +125,39 @@ export class MetricsClient extends BaseSuperset {
       const response = await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
-        data: { metrics: cleanedMetrics }
+        data: { metrics: updatedMetrics }
       });
       
-      // Return updated metric
+      // Return the updated metrics
       const finalMetrics = response.data.result.metrics || [];
-      return finalMetrics[metricIndex];
+      return updates.map(update => {
+        const metricIndex = finalMetrics.findIndex((m: any) => m.id === update.metricId);
+        return finalMetrics[metricIndex];
+      });
     } catch (error) {
-      throw new Error(`Failed to update dataset ${datasetId} metric ${metricId}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to batch update dataset ${datasetId} metrics: ${getErrorMessage(error)}`);
     }
   }
 
-  // Delete dataset metric
-  async deleteDatasetMetric(datasetId: number, metricId: number): Promise<void> {
+  // Delete dataset metrics
+  async deleteDatasetMetrics(datasetId: number, metricIds: number[]): Promise<void> {
     try {
       // Get current dataset
       const dataset = await this.datasetClient.getDataset(datasetId);
       const currentMetrics = dataset.metrics || [];
       
-      // Find metric to delete
-      const metricIndex = currentMetrics.findIndex((m: any) => m.id === metricId);
-      if (metricIndex === -1) {
-        throw new Error(`Metric ${metricId} does not exist`);
+      // Check if all metrics to delete exist
+      const missingMetrics = metricIds.filter(metricId => 
+        !currentMetrics.find((m: any) => m.id === metricId)
+      );
+      
+      if (missingMetrics.length > 0) {
+        throw new Error(`Metrics do not exist: ${missingMetrics.join(', ')}`);
       }
       
       // Clean and filter metrics
       const updatedMetrics = currentMetrics
-        .filter((m: any) => m.id !== metricId)
+        .filter((m: any) => !metricIds.includes(m.id))
         .map((m: any) => ({
           id: m.id,
           metric_name: m.metric_name,
@@ -170,7 +178,7 @@ export class MetricsClient extends BaseSuperset {
         data: { metrics: updatedMetrics }
       });
     } catch (error) {
-      throw new Error(`Failed to delete dataset ${datasetId} metric ${metricId}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to batch delete dataset ${datasetId} metrics: ${getErrorMessage(error)}`);
     }
   }
 } 

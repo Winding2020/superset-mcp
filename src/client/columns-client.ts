@@ -45,15 +45,13 @@ export class ColumnsClient extends BaseSuperset {
     }
   }
 
-  // Create calculated column
-  async createCalculatedColumn(datasetId: number, column: CalculatedColumn): Promise<DatasetColumn> {
+  // Create calculated columns
+  async createCalculatedColumns(datasetId: number, columns: CalculatedColumn[]): Promise<void> {
     try {
-      // Get current dataset
       const dataset = await this.datasetClient.getDataset(datasetId);
       const currentColumns = dataset.columns || [];
-      
-      // Create new calculated column (without ID for creation)
-      const newColumn = {
+
+      const newColumnsToAdd = columns.map(column => ({
         column_name: column.column_name,
         expression: column.expression,
         type: column.type || 'UNKNOWN',
@@ -66,9 +64,8 @@ export class ColumnsClient extends BaseSuperset {
         extra: column.extra,
         advanced_data_type: column.advanced_data_type,
         python_date_format: column.python_date_format,
-      };
-      
-      // Clean existing columns, remove fields not accepted by API
+      }));
+
       const cleanedCurrentColumns = currentColumns.map((c: any) => ({
         id: c.id,
         column_name: c.column_name,
@@ -85,40 +82,35 @@ export class ColumnsClient extends BaseSuperset {
         python_date_format: c.python_date_format,
         uuid: c.uuid,
       }));
-      
-      // Add new column to columns array
-      const newColumns = [...cleanedCurrentColumns, newColumn];
-      
-      // Update dataset
-      const response = await this.makeProtectedRequest({
+
+      const combinedColumns = [...cleanedCurrentColumns, ...newColumnsToAdd];
+
+      await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
-        data: { columns: newColumns }
+        data: { columns: combinedColumns }
       });
-      
-      // Return newly created column (usually the last one in the array)
-      const updatedColumns = response.data.result.columns || [];
-      return updatedColumns[updatedColumns.length - 1];
     } catch (error) {
-      throw new Error(`Failed to create calculated column for dataset ${datasetId}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to create calculated columns for dataset ${datasetId}: ${getErrorMessage(error)}`);
     }
   }
 
-  // Update calculated column
-  async updateCalculatedColumn(datasetId: number, columnId: number, column: Partial<CalculatedColumn>): Promise<DatasetColumn> {
+  // Update calculated columns
+  async updateCalculatedColumns(datasetId: number, updates: Array<{ columnId: number; column: Partial<CalculatedColumn> }>): Promise<DatasetColumn[]> {
     try {
-      // Get current dataset
       const dataset = await this.datasetClient.getDataset(datasetId);
       const currentColumns = dataset.columns || [];
       
-      // Find and update specified column
-      const columnIndex = currentColumns.findIndex((c: any) => c.id === columnId);
-      if (columnIndex === -1) {
-        throw new Error(`Column ${columnId} does not exist`);
+      const updateMap = new Map(updates.map(update => [update.columnId, update.column]));
+      
+      const missingColumns = updates.filter(update => 
+        !currentColumns.some((c: any) => c.id === update.columnId)
+      );
+      if (missingColumns.length > 0) {
+        throw new Error(`Columns do not exist: ${missingColumns.map(c => c.columnId).join(', ')}`);
       }
       
-      // Clean existing columns, remove fields not accepted by API
-      const cleanedColumns = currentColumns.map((c: any, index: number) => {
+      const cleanedColumns = currentColumns.map((c: any) => {
         const cleanedColumn = {
           id: c.id,
           column_name: c.column_name,
@@ -136,44 +128,46 @@ export class ColumnsClient extends BaseSuperset {
           uuid: c.uuid,
         };
         
-        // If this is the column to update, apply updates
-        if (index === columnIndex) {
+        const update = updateMap.get(c.id);
+        if (update) {
           return {
             ...cleanedColumn,
             ...Object.fromEntries(
-              Object.entries(column).filter(([_, value]) => value !== undefined)
+              Object.entries(update).filter(([_, value]) => value !== undefined)
             )
           };
         }
-        
         return cleanedColumn;
       });
       
-      // Update dataset
       const response = await this.makeProtectedRequest({
         method: 'PUT',
         url: `/api/v1/dataset/${datasetId}`,
         data: { columns: cleanedColumns }
       });
       
-      // Return updated column
       const finalColumns = response.data.result.columns || [];
-      return finalColumns[columnIndex];
+      return updates.map(update => {
+        const columnIndex = finalColumns.findIndex((c: any) => c.id === update.columnId);
+        return finalColumns[columnIndex];
+      });
     } catch (error) {
-      throw new Error(`Failed to update calculated column ${columnId} for dataset ${datasetId}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to update calculated columns for dataset ${datasetId}: ${getErrorMessage(error)}`);
     }
   }
 
-  // Delete calculated column
-  async deleteCalculatedColumn(datasetId: number, columnId: number): Promise<void> {
+  // Delete calculated columns
+  async deleteCalculatedColumns(datasetId: number, columnIds: number[]): Promise<void> {
     try {
-      // Use the dedicated delete column endpoint
-      await this.makeProtectedRequest({
-        method: 'DELETE',
-        url: `/api/v1/dataset/${datasetId}/column/${columnId}`
-      });
+      // Sequentially delete each column
+      for (const columnId of columnIds) {
+        await this.makeProtectedRequest({
+          method: 'DELETE',
+          url: `/api/v1/dataset/${datasetId}/column/${columnId}`
+        });
+      }
     } catch (error) {
-      throw new Error(`Failed to delete calculated column ${columnId} from dataset ${datasetId}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to delete calculated columns from dataset ${datasetId}: ${getErrorMessage(error)}`);
     }
   }
 } 

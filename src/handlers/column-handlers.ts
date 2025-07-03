@@ -19,7 +19,7 @@ export const columnToolDefinitions = [
   },
   {
     name: "create_calculated_column",
-    description: "Create a new calculated column for a dataset",
+    description: "Create one or more new calculated columns for a dataset",
     inputSchema: {
       type: "object",
       properties: {
@@ -27,140 +27,65 @@ export const columnToolDefinitions = [
           type: "number",
           description: "Dataset ID",
         },
-        column_name: {
-          type: "string",
-          description: "Column name",
-        },
-        expression: {
-          type: "string",
-          description: "SQL expression for the calculated column",
-        },
-        type: {
-          type: "string",
-          description: "Data type (optional, e.g., 'VARCHAR', 'NUMERIC', 'TIMESTAMP')",
-        },
-        description: {
-          type: "string",
-          description: "Column description (optional)",
-        },
-        verbose_name: {
-          type: "string",
-          description: "Column display name (optional)",
-        },
-        filterable: {
-          type: "boolean",
-          description: "Whether the column can be used for filtering (optional, default: true)",
-        },
-        groupby: {
-          type: "boolean",
-          description: "Whether the column can be used for grouping (optional, default: true)",
-        },
-        is_dttm: {
-          type: "boolean",
-          description: "Whether this is a datetime column (optional, default: false)",
-        },
-        is_active: {
-          type: "boolean",
-          description: "Whether the column is active (optional, default: true)",
-        },
-        extra: {
-          type: "string",
-          description: "Extra configuration in JSON format (optional)",
-        },
-        advanced_data_type: {
-          type: "string",
-          description: "Advanced data type (optional)",
-        },
-        python_date_format: {
-          type: "string",
-          description: "Python date format for datetime columns (optional)",
+        columns: {
+          type: "array",
+          description: "Array of calculated columns to create. For a single column, this array will contain one object.",
+          items: {
+            type: "object",
+            properties: {
+              column_name: { type: "string", description: "Column name" },
+              expression: { type: "string", description: "SQL expression" },
+              type: { type: "string", description: "Data type (optional)" },
+              description: { type: "string", description: "Description (optional)" },
+              verbose_name: { type: "string", description: "Display name (optional)" },
+            },
+            required: ["column_name", "expression"],
+          },
         },
       },
-      required: ["dataset_id", "column_name", "expression"],
+      required: ["dataset_id", "columns"],
     },
   },
   {
     name: "update_calculated_column",
-    description: "Update an existing calculated column in a dataset",
+    description: "Update one or more existing calculated columns in a dataset",
     inputSchema: {
       type: "object",
       properties: {
-        dataset_id: {
-          type: "number",
-          description: "Dataset ID",
-        },
-        column_id: {
-          type: "number",
-          description: "Column ID",
-        },
-        column_name: {
-          type: "string",
-          description: "Column name (optional)",
-        },
-        expression: {
-          type: "string",
-          description: "SQL expression for the calculated column (optional)",
-        },
-        type: {
-          type: "string",
-          description: "Data type (optional)",
-        },
-        description: {
-          type: "string",
-          description: "Column description (optional)",
-        },
-        verbose_name: {
-          type: "string",
-          description: "Column display name (optional)",
-        },
-        filterable: {
-          type: "boolean",
-          description: "Whether the column can be used for filtering (optional)",
-        },
-        groupby: {
-          type: "boolean",
-          description: "Whether the column can be used for grouping (optional)",
-        },
-        is_dttm: {
-          type: "boolean",
-          description: "Whether this is a datetime column (optional)",
-        },
-        is_active: {
-          type: "boolean",
-          description: "Whether the column is active (optional)",
-        },
-        extra: {
-          type: "string",
-          description: "Extra configuration in JSON format (optional)",
-        },
-        advanced_data_type: {
-          type: "string",
-          description: "Advanced data type (optional)",
-        },
-        python_date_format: {
-          type: "string",
-          description: "Python date format for datetime columns (optional)",
+        dataset_id: { type: "number", description: "Dataset ID" },
+        updates: {
+          type: "array",
+          description: "Array of column updates. For a single column, this array will contain one object.",
+          items: {
+            type: "object",
+            properties: {
+              column_id: { type: "number", description: "ID of the column to update" },
+              column_name: { type: "string", description: "New column name (optional)" },
+              expression: { type: "string", description: "New SQL expression (optional)" },
+              description: { type: "string", description: "New description (optional)" },
+              verbose_name: { type: "string", description: "New display name (optional)" },
+            },
+            required: ["column_id"],
+          },
         },
       },
-      required: ["dataset_id", "column_id"],
+      required: ["dataset_id", "updates"],
     },
   },
   {
     name: "delete_calculated_column",
-    description: "Delete a calculated column from a dataset",
+    description: "Delete one or more calculated columns from a dataset",
     inputSchema: {
       type: "object",
       properties: {
-        dataset_id: {
-          type: "number",
-          description: "Dataset ID",
-        },
-        column_id: {
-          type: "number",
-          description: "ID of the column to delete",
+        dataset_id: { type: "number", description: "Dataset ID" },
+        column_ids: {
+          type: "array",
+          description: "Array of column IDs to delete. For a single column, this array will contain one ID.",
+          items: { type: "number" },
         },
       },
-      required: ["dataset_id", "column_id"],
+      required: ["dataset_id", "column_ids"],
     },
   },
 ];
@@ -221,122 +146,66 @@ export async function handleColumnTool(toolName: string, args: any) {
       }
 
       case "create_calculated_column": {
-        const { 
-          dataset_id, 
-          column_name, 
-          expression, 
-          type,
-          description, 
-          verbose_name, 
-          filterable,
-          groupby,
-          is_dttm,
-          is_active,
-          extra,
-          advanced_data_type,
-          python_date_format
-        } = args;
-        
-        const column = { 
-          column_name, 
-          expression, 
-          type,
-          description, 
-          verbose_name, 
-          filterable,
-          groupby,
-          is_dttm,
-          is_active,
-          extra,
-          advanced_data_type,
-          python_date_format
-        };
-        
-        const newColumn = await client.columns.createCalculatedColumn(dataset_id, column);
+        const { dataset_id, columns } = args;
+        await client.columns.createCalculatedColumns(dataset_id, columns);
+        const allColumns = await client.columns.getDatasetColumns(dataset_id);
+        const calculatedColumns = allColumns.filter(c => c.expression);
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} calculated column created successfully!\n\n` +
-                `ID: ${newColumn.id}\n` +
-                `Name: ${newColumn.column_name}\n` +
-                `Expression: ${newColumn.expression}\n` +
-                `Type: ${newColumn.type || 'N/A'}\n` +
-                `Description: ${newColumn.description || 'N/A'}\n` +
-                `Display Name: ${newColumn.verbose_name || 'N/A'}\n` +
-                `Filterable: ${newColumn.filterable ? 'Yes' : 'No'}\n` +
-                `Groupable: ${newColumn.groupby ? 'Yes' : 'No'}\n` +
-                `Is DateTime: ${newColumn.is_dttm ? 'Yes' : 'No'}\n` +
-                `Active: ${newColumn.is_active ? 'Yes' : 'No'}`
+              text: `Calculated columns created for dataset ${dataset_id}. The complete list of calculated columns is now:\n\n` +
+                calculatedColumns.map((col: any) =>
+                  `ID: ${col.id}\n` +
+                  `Name: ${col.column_name}\n` +
+                  `Expression: ${col.expression}\n` +
+                  `Type: ${col.type || 'N/A'}`
+                ).join('\n---\n')
             },
           ],
         };
       }
 
       case "update_calculated_column": {
-        const { 
-          dataset_id, 
-          column_id,
-          column_name, 
-          expression, 
-          type,
-          description, 
-          verbose_name, 
-          filterable,
-          groupby,
-          is_dttm,
-          is_active,
-          extra,
-          advanced_data_type,
-          python_date_format
-        } = args;
-        
-        const column = { 
-          column_name, 
-          expression, 
-          type,
-          description, 
-          verbose_name, 
-          filterable,
-          groupby,
-          is_dttm,
-          is_active,
-          extra,
-          advanced_data_type,
-          python_date_format
-        };
-        
-        const updatedColumn = await client.columns.updateCalculatedColumn(dataset_id, column_id, column);
+        const { dataset_id, updates } = args;
+        const batchUpdates = updates.map((update: any) => ({
+          columnId: update.column_id,
+          column: {
+            column_name: update.column_name,
+            expression: update.expression,
+            description: update.description,
+            verbose_name: update.verbose_name,
+          }
+        }));
+        const updatedColumns = await client.columns.updateCalculatedColumns(dataset_id, batchUpdates);
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} calculated column ${column_id} updated successfully!\n\n` +
-                `Name: ${updatedColumn.column_name}\n` +
-                `Expression: ${updatedColumn.expression || 'N/A'}\n` +
-                `Type: ${updatedColumn.type || 'N/A'}\n` +
-                `Description: ${updatedColumn.description || 'N/A'}\n` +
-                `Display Name: ${updatedColumn.verbose_name || 'N/A'}\n` +
-                `Filterable: ${updatedColumn.filterable ? 'Yes' : 'No'}\n` +
-                `Groupable: ${updatedColumn.groupby ? 'Yes' : 'No'}\n` +
-                `Is DateTime: ${updatedColumn.is_dttm ? 'Yes' : 'No'}\n` +
-                `Active: ${updatedColumn.is_active ? 'Yes' : 'No'}`
+              text: `Dataset ${dataset_id} calculated columns updated successfully!\n\n` +
+                `Updated ${updatedColumns.length} column(s):\n` +
+                updatedColumns.map((col: any) =>
+                  `- ${col.column_name} (ID: ${col.id})\n` +
+                  `  Expression: ${col.expression}\n` +
+                  `  Description: ${col.description || 'N/A'}`
+                ).join('\n')
             },
           ],
         };
       }
 
       case "delete_calculated_column": {
-        const { dataset_id, column_id } = args;
-        await client.columns.deleteCalculatedColumn(dataset_id, column_id);
+        const { dataset_id, column_ids } = args;
+        await client.columns.deleteCalculatedColumns(dataset_id, column_ids);
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} calculated column ${column_id} deleted successfully!`
+              text: `Dataset ${dataset_id} calculated columns deleted successfully!\n\n` +
+                `Deleted ${column_ids.length} column(s) with IDs: ${column_ids.join(', ')}`
             },
           ],
         };

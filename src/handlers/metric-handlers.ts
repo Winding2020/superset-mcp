@@ -19,7 +19,7 @@ export const metricToolDefinitions = [
   },
   {
     name: "create_dataset_metric",
-    description: "Create a new metric for a dataset",
+    description: "Create one or more new metrics for a dataset",
     inputSchema: {
       type: "object",
       properties: {
@@ -27,37 +27,47 @@ export const metricToolDefinitions = [
           type: "number",
           description: "Dataset ID",
         },
-        metric_name: {
-          type: "string",
-          description: "Metric name",
-        },
-        expression: {
-          type: "string",
-          description: "Metric expression (SQL expression)",
-        },
-        metric_type: {
-          type: "string",
-          description: "Metric type (optional)",
-        },
-        description: {
-          type: "string",
-          description: "Metric description (optional)",
-        },
-        verbose_name: {
-          type: "string",
-          description: "Metric display name (optional)",
-        },
-        d3format: {
-          type: "string",
-          description: "D3 format string (optional)",
+        metrics: {
+          type: "array",
+          description: "Array of metrics to create. For a single metric creation, this array will contain one object.",
+          items: {
+            type: "object",
+            properties: {
+              metric_name: {
+                type: "string",
+                description: "Metric name",
+              },
+              expression: {
+                type: "string",
+                description: "Metric expression (SQL expression)",
+              },
+              metric_type: {
+                type: "string",
+                description: "Metric type (optional)",
+              },
+              description: {
+                type: "string",
+                description: "Metric description (optional)",
+              },
+              verbose_name: {
+                type: "string",
+                description: "Metric display name (optional)",
+              },
+              d3format: {
+                type: "string",
+                description: "D3 format string (optional)",
+              },
+            },
+            required: ["metric_name", "expression"],
+          },
         },
       },
-      required: ["dataset_id", "metric_name", "expression"],
+      required: ["dataset_id", "metrics"],
     },
   },
   {
     name: "update_dataset_metric",
-    description: "Update a metric in a dataset",
+    description: "Update one or more metrics in a dataset",
     inputSchema: {
       type: "object",
       properties: {
@@ -65,37 +75,51 @@ export const metricToolDefinitions = [
           type: "number",
           description: "Dataset ID",
         },
-        metric_id: {
-          type: "number",
-          description: "Metric ID",
-        },
-        metric_name: {
-          type: "string",
-          description: "Metric name (optional)",
-        },
-        expression: {
-          type: "string",
-          description: "Metric expression (optional)",
-        },
-        description: {
-          type: "string",
-          description: "Metric description (optional)",
-        },
-        verbose_name: {
-          type: "string",
-          description: "Metric display name (optional)",
-        },
-        d3format: {
-          type: "string",
-          description: "D3 format string (optional)",
+        updates: {
+          type: "array",
+          description: "Array of metric updates. For a single metric update, this array will contain one object.",
+          items: {
+            type: "object",
+            properties: {
+              metric_id: {
+                type: "number",
+                description: "ID of the metric to update",
+              },
+              metric_name: {
+                type: "string",
+                description: "New metric name (optional)",
+              },
+              expression: {
+                type: "string",
+                description: "New metric expression (optional)",
+              },
+              description: {
+                type: "string",
+                description: "New metric description (optional)",
+              },
+              verbose_name: {
+                type: "string",
+                description: "New metric display name (optional)",
+              },
+              d3format: {
+                type: "string",
+                description: "New D3 format string (optional)",
+              },
+              metric_type: {
+                type: "string",
+                description: "New metric type (optional)",
+              },
+            },
+            required: ["metric_id"],
+          },
         },
       },
-      required: ["dataset_id", "metric_id"],
+      required: ["dataset_id", "updates"],
     },
   },
   {
     name: "delete_dataset_metric",
-    description: "Delete a metric from a dataset",
+    description: "Delete one or more metrics from a dataset",
     inputSchema: {
       type: "object",
       properties: {
@@ -103,12 +127,15 @@ export const metricToolDefinitions = [
           type: "number",
           description: "Dataset ID",
         },
-        metric_id: {
-          type: "number",
-          description: "ID of the metric to delete",
+        metric_ids: {
+          type: "array",
+          description: "Array of metric IDs to delete. For a single metric deletion, this array will contain one ID.",
+          items: {
+            type: "number",
+          },
         },
       },
-      required: ["dataset_id", "metric_id"],
+      required: ["dataset_id", "metric_ids"],
     },
   },
 ];
@@ -142,57 +169,73 @@ export async function handleMetricTool(toolName: string, args: any) {
       }
       
       case "create_dataset_metric": {
-        const { dataset_id, metric_name, expression, metric_type, description, verbose_name, d3format } = args;
-        const metric = { metric_name, expression, metric_type, description, verbose_name, d3format };
-        const newMetric = await client.metrics.createDatasetMetric(dataset_id, metric);
+        const { dataset_id, metrics } = args;
+        await client.metrics.createDatasetMetrics(dataset_id, metrics);
+        
+        const allMetrics = await client.metrics.getDatasetMetrics(dataset_id);
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} metric created successfully!\n\n` +
-                `ID: ${newMetric.id}\n` +
-                `Name: ${newMetric.metric_name}\n` +
-                `Type: ${newMetric.metric_type || 'N/A'}\n` +
-                `Expression: ${newMetric.expression}\n` +
-                `Description: ${newMetric.description || 'N/A'}\n` +
-                `Display Name: ${newMetric.verbose_name || 'N/A'}\n` +
-                `D3 Format String: ${newMetric.d3format || 'N/A'}`
+              text: `Metrics created for dataset ${dataset_id}. The complete list of metrics is now:\n\n` +
+                allMetrics.map((metric: any) => 
+                  `ID: ${metric.id}\n` +
+                  `Name: ${metric.metric_name}\n` +
+                  `Type: ${metric.metric_type || 'N/A'}\n` +
+                  `Expression: ${metric.expression}\n` +
+                  `Description: ${metric.description || 'N/A'}`
+                ).join('\n---\n')
             },
           ],
         };
       }
       
       case "update_dataset_metric": {
-        const { dataset_id, metric_id, metric_name, expression, description, verbose_name, d3format } = args;
-        const metric = { metric_name, expression, description, verbose_name, d3format };
-        const updatedMetric = await client.metrics.updateDatasetMetric(dataset_id, metric_id, metric);
+        const { dataset_id, updates } = args;
+        const batchUpdates = updates.map((update: any) => ({
+          metricId: update.metric_id,
+          metric: {
+            metric_name: update.metric_name,
+            expression: update.expression,
+            description: update.description,
+            verbose_name: update.verbose_name,
+            d3format: update.d3format,
+            metric_type: update.metric_type,
+          }
+        }));
+
+        const metrics = await client.metrics.updateDatasetMetrics(dataset_id, batchUpdates);
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} metric ${metric_id} updated successfully!\n\n` +
-                `Name: ${updatedMetric.metric_name}\n` +
-                `Type: ${updatedMetric.metric_type || 'N/A'}\n` +
-                `Expression: ${updatedMetric.expression}\n` +
-                `Description: ${updatedMetric.description || 'N/A'}\n` +
-                `Display Name: ${updatedMetric.verbose_name || 'N/A'}\n` +
-                `D3 Format String: ${updatedMetric.d3format || 'N/A'}`
+              text: `Dataset ${dataset_id} metrics updated successfully!\n\n` +
+                `Updated ${metrics.length} metric${metrics.length > 1 ? 's' : ''}:\n` +
+                metrics.map((metric: any) => 
+                  `- ${metric.metric_name} (ID: ${metric.id})\n` +
+                  `  Type: ${metric.metric_type || 'N/A'}\n` +
+                  `  Expression: ${metric.expression}\n` +
+                  `  Description: ${metric.description || 'N/A'}\n` +
+                  `  Display Name: ${metric.verbose_name || 'N/A'}\n` +
+                  `  D3 Format: ${metric.d3format || 'N/A'}`
+                ).join('\n\n')
             },
           ],
         };
       }
       
       case "delete_dataset_metric": {
-        const { dataset_id, metric_id } = args;
-        await client.metrics.deleteDatasetMetric(dataset_id, metric_id);
+        const { dataset_id, metric_ids } = args;
+        await client.metrics.deleteDatasetMetrics(dataset_id, metric_ids);
         
         return {
           content: [
             {
               type: "text",
-              text: `Dataset ${dataset_id} metric ${metric_id} deleted successfully!`
+              text: `Dataset ${dataset_id} metrics deleted successfully!\n\n` +
+                `Deleted ${metric_ids.length} metric${metric_ids.length > 1 ? 's' : ''} with ID${metric_ids.length > 1 ? 's' : ''}: ${metric_ids.join(', ')}`
             },
           ],
         };
