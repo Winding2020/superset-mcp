@@ -468,7 +468,7 @@ export interface DashboardFilterConfig {
     filterType: string;
     targets: Array<{
       datasetId: number;
-      column: {
+      column?: {
         name: string;
       };
     }>;

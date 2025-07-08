@@ -236,6 +236,12 @@ export class DashboardClient extends BaseSuperset {
           
           if (appliesToChart && filter.targets) {
             for (const target of filter.targets) {
+              // Add defensive check for target.column
+              if (!target.column || !target.column.name) {
+                console.warn(`Filter target missing column information:`, target);
+                continue;
+              }
+              
               // For virtual datasets, also check if the filter column exists in the dataset SQL
               const columnInDataset = target.datasetId === datasetId || 
                                      (datasetDetails?.sql && datasetDetails.sql.includes(target.column.name));

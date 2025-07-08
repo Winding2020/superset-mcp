@@ -524,7 +524,8 @@ export async function handleDashboardTool(toolName: string, args: any) {
                 responseText += `   Targets:\n`;
                 if (filter.targets) {
                   filter.targets.forEach(target => {
-                    responseText += `     - Dataset ${target.datasetId}, Column: ${target.column.name}\n`;
+                    const columnName = target.column?.name || 'Unknown';
+                    responseText += `     - Dataset ${target.datasetId}, Column: ${columnName}\n`;
                   });
                 }
                 responseText += `   Charts in Scope: ${filter.chartsInScope?.join(', ') || 'All'}\n`;
