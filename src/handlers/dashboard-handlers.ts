@@ -197,7 +197,7 @@ export async function handleDashboardTool(toolName: string, args: any) {
           responseText += `Dataset Details:\n`;
           responseText += `  Table Name: ${queryContext.dataset_details.table_name}\n`;
           responseText += `  Schema: ${queryContext.dataset_details.schema || 'N/A'}\n`;
-          responseText += `  Database: ${queryContext.dataset_details.database?.database_name || 'N/A'}\n`;
+          responseText += `  Database: ${queryContext.dataset_details.database?.database_name || 'N/A'} (ID: ${queryContext.dataset_details.database?.id})\n`;
           responseText += `  Dataset Type: ${queryContext.dataset_details.sql ? 'Virtual (SQL-based)' : 'Physical (Table-based)'}\n`;
           
           if (queryContext.dataset_details.sql) {

@@ -72,7 +72,7 @@ export const chartToolDefinitions = [
   },
   {
     name: "create_chart",
-    description: "Create a new chart in Superset. Use `get_chart_params` first to understand the required parameter structure for your chosen viz_type.",
+    description: "Create a new chart in Superset. IMPORTANT: You must first call `get_chart_params` with your desired viz_type to get the correct parameter structure before using this tool. Without the proper parameter structure, chart creation will fail.",
     inputSchema: {
       type: "object",
       properties: {
@@ -95,7 +95,7 @@ export const chartToolDefinitions = [
         },
         params: {
           type: "string",
-          description: "JSON string of visualization parameters. Use get_chart_params to get the correct structure for your viz_type.",
+          description: "JSON string of visualization parameters. REQUIRED: Call `get_chart_params` first with your viz_type to get the exact parameter structure needed. This field must match the schema returned by get_chart_params.",
         },
         description: {
           type: "string",
@@ -185,7 +185,7 @@ export const chartToolDefinitions = [
   getChartParamsTool,
   {
     name: "update_chart",
-    description: "Update chart properties including metadata, datasource, and visualization settings. This tool replaces the old update_chart_params with a unified interface that accepts object format params and can modify any chart property. Use `get_chart_params` to get the correct parameter structure for visualization settings.",
+    description: "Update chart properties including metadata, datasource, and visualization settings. This tool replaces the old update_chart_params with a unified interface that accepts object format params and can modify any chart property. IMPORTANT: When updating visualization parameters, first call `get_chart_params` with the chart's viz_type to get the correct parameter structure.",
     inputSchema: {
       type: "object",
       properties: {
@@ -203,7 +203,7 @@ export const chartToolDefinitions = [
         },
         params: {
           type: "object",
-          description: "Visualization parameters as an object. Use get_chart_params to get the correct structure for your viz_type.",
+          description: "Visualization parameters as an object. REQUIRED: Call `get_chart_params` first with the chart's viz_type to get the exact parameter structure needed. This field must match the schema returned by get_chart_params.",
           additionalProperties: true,
         },
         description: {
@@ -405,6 +405,23 @@ export async function handleChartTool(toolName: string, args: any) {
       
       case "create_chart": {
         const { slice_name, datasource_id, datasource_type, viz_type, params, ...otherFields } = args;
+        
+        // Add helpful guidance if viz_type is provided but params are missing
+        if (viz_type && viz_type !== 'table' && !params) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `WARNING: You specified viz_type '${viz_type}' but didn't provide params.\n\n` +
+                  `For chart types other than 'table', you need to provide the correct parameters.\n\n` +
+                  `Please first call:\n` +
+                  `get_chart_params(viz_type="${viz_type}")\n\n` +
+                  `This will show you the required parameter structure for a ${viz_type} chart. Then use those parameters in the 'params' field when calling create_chart again.`
+              },
+            ],
+            isError: true,
+          };
+        }
         
         const chartData: any = {
           slice_name,
@@ -655,7 +672,24 @@ export async function handleChartTool(toolName: string, args: any) {
       }
       
       case "update_chart": {
-        const { chart_id, params, ...updateFields } = args;
+        const { chart_id, params, viz_type, ...updateFields } = args;
+        
+        // Add helpful guidance if viz_type is being changed but params are missing
+        if (viz_type && viz_type !== 'table' && !params) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `⚠️ WARNING: You're changing viz_type to '${viz_type}' but didn't provide params.\n\n` +
+                  `When changing chart types, you need to provide the correct parameters for the new visualization type.\n\n` +
+                  `Please first call:\n` +
+                  `get_chart_params(viz_type="${viz_type}")\n\n` +
+                  `This will show you the required parameter structure for a ${viz_type} chart. Then use those parameters in the 'params' field when calling update_chart again.`
+              },
+            ],
+            isError: true,
+          };
+        }
         
         // Handle params - serialize object to JSON string
         if (params !== undefined) {
@@ -665,6 +699,11 @@ export async function handleChartTool(toolName: string, args: any) {
           if (params.viz_type && !updateFields.viz_type) {
             updateFields.viz_type = params.viz_type;
           }
+        }
+        
+        // Add viz_type if provided
+        if (viz_type) {
+          updateFields.viz_type = viz_type;
         }
         
         const updatedChart = await client.charts.updateChart(chart_id, updateFields);

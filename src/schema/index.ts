@@ -70,7 +70,7 @@ export const getChartParamsSchema = [
   'get_chart_params',
   {
     description:
-      'Get the required parameters format for a specific chart visualization type (viz_type).',
+      'Get the required parameters format for a specific chart visualization type (viz_type). ALWAYS use this tool before creating or updating charts to ensure you have the correct parameter structure. This tool provides the exact schema needed for the params field in create_chart and update_chart.',
     inputSchema: z.object({
       viz_type: z.enum(vizTypeEnum).describe('The visualization type of the chart'),
     }),
