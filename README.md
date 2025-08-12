@@ -99,9 +99,10 @@ Configure your Superset connection by updating the `env` section in the MCP conf
 | Tool | Description |
 |------|-------------|
 | `list_charts` | Get paginated list of all charts with filtering and sorting |
+| `create_chart` | Create a new chart; for most viz types you should first call `get_chart_params` to obtain the correct params schema |
 | `get_chart_params` | Get required parameters format for chart visualization types |
-| `get_current_chart_config` | Get current visualization parameters of a chart |
-| `update_chart_params` | Update chart visualization parameters |
+| `get_current_chart_config` | Get current chart configuration details (viz params, relationships, ownership, query context) |
+| `update_chart` | Update chart properties including metadata, datasource, and visualization parameters |
 | `get_chart_filters` | Get current data filters applied to a chart |
 | `set_chart_filters` | Set data filters for a chart (permanently updates the chart) |
 
@@ -131,3 +132,22 @@ Access read-only overviews through MCP resources:
 - `superset://databases` - List of database connections  
 - `superset://dataset-metrics` - Overview of all metrics across datasets
 
+
+## Prompt examples
+
+Use these natural prompts with your MCP-enabled assistant; it will pick the right tools and arguments.
+
+- List datasets
+  - "Show the first 10 datasets, most recently changed first. Only include id and table_name."
+
+- Create a chart
+  - "Create a simple table chart called 'Sample Table' using dataset 12."
+
+- Update a chart
+  - "Change chart 42 to a bar chart grouped by country and using SUM(value)."
+
+- Dashboard query context
+  - "On the 'sales-kpi' dashboard, show the full query context for chart 101."
+
+- Run SQL
+  - "On database 3, fetch the 10 most recently created users, returning only id and name."

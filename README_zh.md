@@ -99,9 +99,10 @@
 | 工具 | 描述 |
 |------|-------------|
 | `list_charts` | 获取带有过滤和排序的所有图表分页列表 |
+| `create_chart` | 创建新图表；多数可视化类型需先调用 `get_chart_params` 获取正确的参数结构 |
 | `get_chart_params` | 获取图表可视化类型所需的参数格式 |
-| `get_current_chart_config` | 获取图表的当前可视化参数 |
-| `update_chart_params` | 更新图表可视化参数 |
+| `get_current_chart_config` | 获取图表的完整配置信息（可视化参数、关系、所有权、查询上下文） |
+| `update_chart` | 更新图表属性（元数据、数据源、可视化参数） |
 | `get_chart_filters` | 获取应用于图表的当前数据过滤器 |
 | `set_chart_filters` | 为图表设置数据过滤器（永久更新图表） |
 
@@ -130,3 +131,23 @@
 - `superset://datasets` - 所有数据集概览
 - `superset://databases` - 数据库连接列表  
 - `superset://dataset-metrics` - 所有数据集中指标的概览
+
+
+## Prompt 示例
+
+以下是可以直接用于与 MCP 助手交互的自然语言示例，助手会自动选择合适的工具并补全参数：
+
+- 列出数据集
+  - “显示最近变更的前 10 个数据集，只包含 id 和 table_name。”
+
+- 创建图表
+  - “用数据集 12 创建一个名为 ‘Sample Table’ 的表格图。”
+
+- 更新图表
+  - “把 42 号图表改成按国家分组的柱状图，使用 SUM(value) 指标。”
+
+- 仪表板查询上下文
+  - “在 ‘sales-kpi’ 仪表板里，展示 101 号图表的完整查询上下文。”
+
+- 运行 SQL
+  - “在数据库 3 上，查询最近创建的 10 个用户，返回 id 和 name，并按创建时间从新到旧排序。”
