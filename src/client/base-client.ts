@@ -213,6 +213,7 @@ export class BaseSuperset {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.accessToken}`,
         'X-CSRFToken': token,
+        'Referer': this.config.baseUrl,
         ...config.headers,
       },
       withCredentials: true,
