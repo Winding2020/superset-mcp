@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -15,10 +19,19 @@ import { toolDefinitions, handleToolCall } from "./handlers/tool-handlers.js";
 import { resourceDefinitions, handleResourceRead } from "./handlers/resource-handlers.js";
 import { getErrorMessage } from "./utils/error.js";
 
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const packageJsonPath = resolve(currentDir, "../package.json");
+const packageInfo = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+
+if (process.argv.includes("--version") || process.argv.includes("-v")) {
+  console.log(`${packageInfo.name} ${packageInfo.version}`);
+  process.exit(0);
+}
+
 // Create MCP server
 const server = new Server({
   name: "superset-dataset-mcp",
-  version: "1.0.0",
+  version: packageInfo.version,
 }, {
   capabilities: {
     tools: {},
