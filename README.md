@@ -113,6 +113,10 @@ Configure your Superset connection by updating the `env` section in the MCP conf
 | `get_dashboard_charts` | Get all charts in a specific dashboard with their information |
 | `get_dashboard_filters` | Get dashboard's filter configuration (native filters, global filters) |
 | `get_dashboard_chart_query_context` | Get complete query context for a chart in dashboard (dataset ID, used metrics with SQL expressions, calculated columns, applied filters) |
+| `get_dashboard_config` | Get dashboard details and embedded configuration |
+| `update_dashboard_config` | Update dashboard properties and/or embedded configuration |
+| `add_chart_to_dashboard` | Add an existing chart to a dashboard and place it in the layout |
+| `remove_chart_from_dashboard` | Remove a chart from a dashboard and clean up its layout |
 
 ### SQL Operations
 | Tool | Description |

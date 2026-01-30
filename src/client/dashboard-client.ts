@@ -1,4 +1,4 @@
-import { Dashboard, DashboardChartsResponse, DashboardFilterConfig, DashboardQueryContext, DashboardListQuery, DashboardListResponse } from "../types/index.js";
+import { Dashboard, DashboardChartsResponse, DashboardFilterConfig, DashboardQueryContext, DashboardListQuery, DashboardListResponse, DashboardUpdateRequest, EmbeddedDashboardConfig, EmbeddedDashboardResponse } from "../types/index.js";
 import { BaseSuperset } from "./base-client.js";
 import { getErrorMessage } from "../utils/error.js";
 
@@ -37,6 +37,71 @@ export class DashboardClient extends BaseSuperset {
       return response.data.result;
     } catch (error) {
       throw new Error(`Failed to get dashboard ${idOrSlug}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Update dashboard information by ID or slug
+   */
+  async updateDashboard(idOrSlug: string | number, payload: DashboardUpdateRequest): Promise<DashboardUpdateRequest> {
+    await this.ensureAuthenticated();
+    
+    try {
+      let dashboardId: number | null = null;
+      
+      if (typeof idOrSlug === 'number') {
+        dashboardId = idOrSlug;
+      } else if (/^\d+$/.test(idOrSlug)) {
+        dashboardId = parseInt(idOrSlug, 10);
+      } else {
+        const dashboard = await this.getDashboard(idOrSlug);
+        dashboardId = dashboard.id;
+      }
+      
+      if (!dashboardId) {
+        throw new Error(`Unable to resolve dashboard id from ${idOrSlug}`);
+      }
+      
+      const response = await this.makeProtectedRequest({
+        method: 'put',
+        url: `/api/v1/dashboard/${dashboardId}`,
+        data: payload,
+      });
+      return response.data.result || response.data;
+    } catch (error) {
+      throw new Error(`Failed to update dashboard ${idOrSlug}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Get embedded dashboard configuration
+   */
+  async getEmbeddedDashboardConfig(idOrSlug: string | number): Promise<EmbeddedDashboardResponse> {
+    await this.ensureAuthenticated();
+    
+    try {
+      const response = await this.api.get(`/api/v1/dashboard/${idOrSlug}/embedded`);
+      return response.data.result;
+    } catch (error) {
+      throw new Error(`Failed to get embedded config for dashboard ${idOrSlug}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Set embedded dashboard configuration
+   */
+  async setEmbeddedDashboardConfig(idOrSlug: string | number, payload: EmbeddedDashboardConfig): Promise<EmbeddedDashboardResponse> {
+    await this.ensureAuthenticated();
+    
+    try {
+      const response = await this.makeProtectedRequest({
+        method: 'put',
+        url: `/api/v1/dashboard/${idOrSlug}/embedded`,
+        data: payload,
+      });
+      return response.data.result;
+    } catch (error) {
+      throw new Error(`Failed to set embedded config for dashboard ${idOrSlug}: ${getErrorMessage(error)}`);
     }
   }
 

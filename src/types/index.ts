@@ -433,6 +433,41 @@ export interface Dashboard {
   created_on_dttm?: string;
 }
 
+// Dashboard update request
+export interface DashboardUpdateRequest {
+  certification_details?: string | null;
+  certified_by?: string | null;
+  css?: string | null;
+  dashboard_title?: string | null;
+  external_url?: string | null;
+  is_managed_externally?: boolean | null;
+  json_metadata?: string | null;
+  owners?: number[];
+  position_json?: string | null;
+  published?: boolean | null;
+  roles?: number[];
+  slug?: string | null;
+  tags?: number[];
+}
+
+// Embedded dashboard configuration
+export interface EmbeddedDashboardConfig {
+  allowed_domains: string[];
+}
+
+// Embedded dashboard response
+export interface EmbeddedDashboardResponse {
+  allowed_domains?: string[];
+  changed_by?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  changed_on?: string;
+  dashboard_id?: string | number;
+  uuid?: string;
+}
+
 // Dashboard chart item (chart info from dashboard endpoint)
 export interface DashboardChartItem {
   id: number;

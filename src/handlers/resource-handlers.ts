@@ -11,18 +11,11 @@ export const resourceDefinitions = [
     description: "All database connections configured in Superset",
     mimeType: "text/plain",
   },
-  {
-    uri: "superset://dataset-metrics",
-    name: "Dataset Metrics Overview",
-    description: "Overview of metrics defined in all datasets",
-    mimeType: "text/plain",
-  },
 ];
 
 import { ReadResourceRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { initializeSupersetClient } from "../client/index.js";
 import { getErrorMessage } from "../utils/error.js";
-import { DatasetMetric } from "../types/index.js";
 
 export async function handleResourceRead(request: any) {
   const client = initializeSupersetClient();
@@ -68,56 +61,6 @@ export async function handleResourceRead(request: any) {
             {
               uri: request.params.uri,
               mimeType: "text/plain", 
-              text: content,
-            },
-          ],
-        };
-      }
-      
-      case "superset://dataset-metrics": {
-        const datasetsResult = await client.datasets.getDatasets({ page: 0, page_size: 100 });
-        let allMetrics: Array<{datasetId: number, datasetName: string, metrics: DatasetMetric[]}> = [];
-        
-        // Get metrics for all datasets
-        for (const dataset of datasetsResult.result) {
-          try {
-            const metrics = await client.metrics.getDatasetMetrics(dataset.id);
-            if (metrics.length > 0) {
-              allMetrics.push({
-                datasetId: dataset.id,
-                datasetName: dataset.table_name,
-                metrics: metrics
-              });
-            }
-          } catch (error) {
-            // Ignore errors for individual datasets, continue processing others
-            console.error(`Failed to get metrics for dataset ${dataset.id}:`, error);
-          }
-        }
-        
-        const totalMetrics = allMetrics.reduce((sum, item) => sum + item.metrics.length, 0);
-        
-        const content = `Dataset Metrics Overview\n` +
-          `====================\n\n` +
-          `Total metrics: ${totalMetrics}\n` +
-          `Datasets with metrics: ${allMetrics.length}\n\n` +
-          allMetrics.map(item => 
-            `Dataset: ${item.datasetName} (ID: ${item.datasetId})\n` +
-            `Metrics count: ${item.metrics.length}\n` +
-            item.metrics.map(metric => 
-              `  • ${metric.metric_name} (ID: ${metric.id})\n` +
-              `    Expression: ${metric.expression}\n` +
-              `    Type: ${metric.metric_type || 'N/A'}\n` +
-              `    Description: ${metric.description || 'N/A'}\n`
-            ).join('') +
-            `\n`
-          ).join('');
-        
-        return {
-          contents: [
-            {
-              uri: request.params.uri,
-              mimeType: "text/plain",
               text: content,
             },
           ],

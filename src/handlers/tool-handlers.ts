@@ -63,6 +63,10 @@ const toolRoutes = {
   "get_dashboard_chart_query_context": handleDashboardTool,
   "get_dashboard_charts": handleDashboardTool,
   "get_dashboard_filters": handleDashboardTool,
+  "get_dashboard_config": handleDashboardTool,
+  "update_dashboard_config": handleDashboardTool,
+  "add_chart_to_dashboard": handleDashboardTool,
+  "remove_chart_from_dashboard": handleDashboardTool,
 };
 
 export async function handleToolCall(request: any) {

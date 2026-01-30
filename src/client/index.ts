@@ -34,7 +34,7 @@ export { ChartClient } from './chart-client.js';
 export { DashboardClient } from './dashboard-client.js';
 
 // Type definitions
-export { 
+export type { 
   SupersetConfig, 
   Dataset, 
   DatasetMetric, 
@@ -51,6 +51,9 @@ export {
   ChartListItem,
   ChartListResponse,
   Dashboard,
+  DashboardUpdateRequest,
+  EmbeddedDashboardConfig,
+  EmbeddedDashboardResponse,
   DashboardListItem,
   DashboardListQuery,
   DashboardListResponse,
@@ -58,4 +61,4 @@ export {
   DashboardChartsResponse,
   DashboardFilterConfig,
   DashboardQueryContext
-} from '../types/index.js'; 
+} from '../types/index.js';

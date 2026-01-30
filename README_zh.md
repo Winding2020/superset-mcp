@@ -113,6 +113,10 @@
 | `get_dashboard_charts` | 获取特定仪表板中的所有图表及其信息 |
 | `get_dashboard_filters` | 获取仪表板的过滤器配置（原生过滤器、全局过滤器） |
 | `get_dashboard_chart_query_context` | 获取仪表板中图表的完整查询上下文（数据集 ID、使用的指标及其 SQL 表达式、计算列、应用的过滤器） |
+| `get_dashboard_config` | 获取仪表板详情与嵌入配置 |
+| `update_dashboard_config` | 更新仪表板属性和/或嵌入配置 |
+| `add_chart_to_dashboard` | 将已有图表添加到仪表板并放入布局 |
+| `remove_chart_from_dashboard` | 从仪表板移除图表并清理布局 |
 
 ### SQL 操作
 | 工具 | 描述 |

@@ -1,6 +1,6 @@
 {
   "name": "superset-mcp",
-  "version": "1.6.5",
+  "version": "1.7.0",
   "description": "MCP server for reading and editing Apache Superset dataset data",
   "type": "module",
   "main": "build/index.js",
@@ -14,7 +14,7 @@
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "axios": "^1.6.0",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.24.6"

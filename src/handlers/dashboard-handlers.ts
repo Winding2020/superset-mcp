@@ -1,6 +1,194 @@
 import { initializeSupersetClient } from "../client/index.js";
 import { getErrorMessage } from "../utils/error.js";
 
+const ROOT_NODE_ID = "ROOT_ID";
+const GRID_NODE_ID = "GRID_ID";
+const DEFAULT_CHART_WIDTH = 12;
+const DEFAULT_CHART_HEIGHT = 50;
+
+function generateNodeId(prefix: string): string {
+  const timePart = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).slice(2, 8);
+  return `${prefix}-${timePart}-${randomPart}`;
+}
+
+function parsePositionJson(positionJson?: string | null): Record<string, any> {
+  if (!positionJson) {
+    return {};
+  }
+  try {
+    return JSON.parse(positionJson);
+  } catch (error) {
+    throw new Error(`Failed to parse position_json: ${getErrorMessage(error)}`);
+  }
+}
+
+function parseJsonMetadata(jsonMetadata?: string | null): Record<string, any> {
+  if (!jsonMetadata) {
+    return {};
+  }
+  try {
+    return JSON.parse(jsonMetadata);
+  } catch (error) {
+    throw new Error(`Failed to parse json_metadata: ${getErrorMessage(error)}`);
+  }
+}
+
+function ensureChartConfiguration(metadata: Record<string, any>): Record<string, any> {
+  if (!metadata.chart_configuration || typeof metadata.chart_configuration !== "object") {
+    metadata.chart_configuration = {};
+  }
+  return metadata.chart_configuration;
+}
+
+function ensureGlobalChartConfiguration(metadata: Record<string, any>): Record<string, any> {
+  if (!metadata.global_chart_configuration || typeof metadata.global_chart_configuration !== "object") {
+    metadata.global_chart_configuration = {
+      scope: {
+        rootPath: [ROOT_NODE_ID],
+        excluded: [],
+      },
+      chartsInScope: [],
+    };
+  }
+  if (!Array.isArray(metadata.global_chart_configuration.chartsInScope)) {
+    metadata.global_chart_configuration.chartsInScope = [];
+  }
+  return metadata.global_chart_configuration;
+}
+
+function addChartToMetadata(metadata: Record<string, any>, chartId: number): void {
+  const chartConfiguration = ensureChartConfiguration(metadata);
+  const globalConfiguration = ensureGlobalChartConfiguration(metadata);
+  const globalCharts = new Set<number>(globalConfiguration.chartsInScope || []);
+
+  globalCharts.add(chartId);
+  globalConfiguration.chartsInScope = Array.from(globalCharts);
+
+  const existingChartIds = Object.keys(chartConfiguration)
+    .map(Number)
+    .filter(id => !Number.isNaN(id));
+
+  if (!chartConfiguration[chartId]) {
+    chartConfiguration[chartId] = {
+      id: chartId,
+      crossFilters: {
+        scope: "global",
+        chartsInScope: [],
+      },
+    };
+  }
+
+  const newChartScope = existingChartIds.filter(id => id !== chartId);
+  if (!chartConfiguration[chartId].crossFilters) {
+    chartConfiguration[chartId].crossFilters = {
+      scope: "global",
+      chartsInScope: newChartScope,
+    };
+  } else if (!Array.isArray(chartConfiguration[chartId].crossFilters.chartsInScope)) {
+    chartConfiguration[chartId].crossFilters.chartsInScope = newChartScope;
+  } else {
+    chartConfiguration[chartId].crossFilters.chartsInScope = newChartScope;
+  }
+
+  Object.values(chartConfiguration).forEach((config: any) => {
+    if (!config?.crossFilters || !Array.isArray(config.crossFilters.chartsInScope)) {
+      return;
+    }
+    if (!config.crossFilters.chartsInScope.includes(chartId) && config.id !== chartId) {
+      config.crossFilters.chartsInScope.push(chartId);
+    }
+  });
+}
+
+function removeChartFromMetadata(metadata: Record<string, any>, chartId: number): void {
+  const chartConfiguration = ensureChartConfiguration(metadata);
+  const globalConfiguration = ensureGlobalChartConfiguration(metadata);
+
+  if (chartConfiguration[chartId]) {
+    delete chartConfiguration[chartId];
+  }
+
+  Object.values(chartConfiguration).forEach((config: any) => {
+    if (!config?.crossFilters || !Array.isArray(config.crossFilters.chartsInScope)) {
+      return;
+    }
+    config.crossFilters.chartsInScope = config.crossFilters.chartsInScope.filter(
+      (id: number) => id !== chartId
+    );
+  });
+
+  globalConfiguration.chartsInScope = (globalConfiguration.chartsInScope || []).filter(
+    (id: number) => id !== chartId
+  );
+}
+
+function ensureLayoutBase(layout: Record<string, any>): void {
+  if (!layout[ROOT_NODE_ID]) {
+    layout[ROOT_NODE_ID] = {
+      id: ROOT_NODE_ID,
+      type: "ROOT",
+      children: [GRID_NODE_ID],
+    };
+  }
+
+  if (!layout[GRID_NODE_ID]) {
+    layout[GRID_NODE_ID] = {
+      id: GRID_NODE_ID,
+      type: "GRID",
+      parents: [ROOT_NODE_ID],
+      children: [],
+    };
+  }
+
+  if (!Array.isArray(layout[ROOT_NODE_ID].children)) {
+    layout[ROOT_NODE_ID].children = [];
+  }
+  if (!layout[ROOT_NODE_ID].children.includes(GRID_NODE_ID)) {
+    layout[ROOT_NODE_ID].children.push(GRID_NODE_ID);
+  }
+
+  if (!Array.isArray(layout[GRID_NODE_ID].children)) {
+    layout[GRID_NODE_ID].children = [];
+  }
+}
+
+function findChartNodeId(layout: Record<string, any>, chartId: number): string | null {
+  for (const [nodeId, node] of Object.entries(layout)) {
+    if (node?.type === "CHART" && node?.meta?.chartId === chartId) {
+      return nodeId;
+    }
+  }
+  return null;
+}
+
+function removeChartFromLayout(layout: Record<string, any>, chartId: number): { chartNodeId: string; rowNodeId?: string } {
+  const chartNodeId = findChartNodeId(layout, chartId);
+  if (!chartNodeId) {
+    throw new Error(`Chart ${chartId} not found in layout`);
+  }
+
+  const chartNode = layout[chartNodeId];
+  const rowNodeId = Array.isArray(chartNode?.parents)
+    ? chartNode.parents.find((parent: string) => parent.startsWith("ROW-"))
+    : undefined;
+
+  if (rowNodeId && layout[rowNodeId]?.children) {
+    layout[rowNodeId].children = layout[rowNodeId].children.filter((child: string) => child !== chartNodeId);
+  }
+
+  delete layout[chartNodeId];
+
+  if (rowNodeId && layout[rowNodeId] && (!layout[rowNodeId].children || layout[rowNodeId].children.length === 0)) {
+    delete layout[rowNodeId];
+    if (layout[GRID_NODE_ID]?.children) {
+      layout[GRID_NODE_ID].children = layout[GRID_NODE_ID].children.filter((child: string) => child !== rowNodeId);
+    }
+  }
+
+  return { chartNodeId, rowNodeId };
+}
+
 // Dashboard tool definitions
 export const dashboardToolDefinitions = [
   {
@@ -103,6 +291,159 @@ export const dashboardToolDefinitions = [
         },
       },
       required: ["dashboard_id"],
+    },
+  },
+  {
+    name: "get_dashboard_config",
+    description: "Get dashboard details and embedded configuration in a single response.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dashboard_id: {
+          type: "string",
+          description: "Dashboard ID (number as string) or slug",
+        },
+      },
+      required: ["dashboard_id"],
+    },
+  },
+  {
+    name: "update_dashboard_config",
+    description: "Update dashboard properties and/or embedded configuration in a single request. Provide at least one of dashboard or embedded_config.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dashboard_id: {
+          type: "string",
+          description: "Dashboard ID (number as string) or slug",
+        },
+        dashboard: {
+          type: "object",
+          description: "Dashboard update payload. Fields are optional; send only what you want to change.",
+          properties: {
+            dashboard_title: {
+              type: ["string", "null"],
+              description: "Dashboard title.",
+            },
+            slug: {
+              type: ["string", "null"],
+              description: "Unique slug used in dashboard URL.",
+            },
+            description: {
+              type: ["string", "null"],
+              description: "Dashboard description.",
+            },
+            css: {
+              type: ["string", "null"],
+              description: "Override CSS for the dashboard.",
+            },
+            json_metadata: {
+              type: ["string", "null"],
+              description: "Dashboard metadata JSON string (filters, layout config, etc.).",
+            },
+            position_json: {
+              type: ["string", "null"],
+              description: "Dashboard layout JSON string (positions/sizes).",
+            },
+            published: {
+              type: ["boolean", "null"],
+              description: "Whether dashboard is visible in list.",
+            },
+            is_managed_externally: {
+              type: ["boolean", "null"],
+              description: "Whether dashboard is managed externally.",
+            },
+            external_url: {
+              type: ["string", "null"],
+              description: "External URL for managed dashboards.",
+            },
+            certified_by: {
+              type: ["string", "null"],
+              description: "Certified by user or group.",
+            },
+            certification_details: {
+              type: ["string", "null"],
+              description: "Certification details.",
+            },
+            owners: {
+              type: "array",
+              description: "Owner user IDs.",
+              items: { type: "number" },
+            },
+            roles: {
+              type: "array",
+              description: "Role IDs that can access the dashboard.",
+              items: { type: "number" },
+            },
+            tags: {
+              type: "array",
+              description: "Tag IDs to associate with the dashboard.",
+              items: { type: "number" },
+            },
+          },
+        },
+        embedded_config: {
+          type: "object",
+          description: "Embedded dashboard config payload.",
+          properties: {
+            allowed_domains: {
+              type: "array",
+              items: { type: "string" },
+              description: "Allowed domains for embedding.",
+            },
+          },
+          required: ["allowed_domains"],
+        },
+      },
+      required: ["dashboard_id"],
+    },
+  },
+  {
+    name: "add_chart_to_dashboard",
+    description: "Add an existing chart to a dashboard and place it in the layout (position_json).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dashboard_id: {
+          type: "string",
+          description: "Dashboard ID (number as string) or slug",
+        },
+        chart_id: {
+          type: "number",
+          description: "Chart ID to add",
+        },
+        width: {
+          type: "number",
+          description: "Chart width in grid units (default 12)",
+        },
+        height: {
+          type: "number",
+          description: "Chart height in grid units (default 50)",
+        },
+        row_index: {
+          type: "number",
+          description: "Insert row index in GRID_ID children (default append)",
+        },
+      },
+      required: ["dashboard_id", "chart_id"],
+    },
+  },
+  {
+    name: "remove_chart_from_dashboard",
+    description: "Remove a chart from a dashboard and clean up its layout nodes.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dashboard_id: {
+          type: "string",
+          description: "Dashboard ID (number as string) or slug",
+        },
+        chart_id: {
+          type: "number",
+          description: "Chart ID to remove",
+        },
+      },
+      required: ["dashboard_id", "chart_id"],
     },
   },
 ];
@@ -586,6 +927,228 @@ export async function handleDashboardTool(toolName: string, args: any) {
             {
               type: "text",
               text: responseText
+            },
+          ],
+        };
+      }
+
+      case "get_dashboard_config": {
+        const { dashboard_id } = args;
+        const dashboard = await client.dashboards.getDashboard(dashboard_id);
+
+        let embeddedConfig: any = null;
+        let embeddedError: string | null = null;
+        let embeddedStatusHint: string | null = null;
+        try {
+          embeddedConfig = await client.dashboards.getEmbeddedDashboardConfig(dashboard_id);
+        } catch (error) {
+          embeddedError = getErrorMessage(error);
+          if (embeddedError.includes("404")) {
+            embeddedStatusHint = "Embedded config not found. This dashboard likely has no embedded configuration yet.";
+          }
+        }
+
+        let responseText = `Dashboard Config:\n\n`;
+        responseText += `Dashboard ID: ${dashboard.id}\n`;
+        responseText += `Title: ${dashboard.dashboard_title}\n\n`;
+        responseText += `Dashboard Detail:\n`;
+        responseText += `${JSON.stringify(dashboard, null, 2)}\n\n`;
+
+        if (embeddedConfig) {
+          responseText += `Embedded Config:\n`;
+          responseText += `${JSON.stringify(embeddedConfig, null, 2)}\n`;
+        } else {
+          responseText += `Embedded Config: Not available\n`;
+          if (embeddedStatusHint) {
+            responseText += `Embedded Config Note: ${embeddedStatusHint}\n`;
+          }
+          if (embeddedError) {
+            responseText += `Embedded Config Error: ${embeddedError}\n`;
+          }
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText,
+            },
+          ],
+        };
+      }
+
+      case "update_dashboard_config": {
+        const { dashboard_id, dashboard, embedded_config } = args;
+
+        if (!dashboard && !embedded_config) {
+          throw new Error("At least one of dashboard or embedded_config is required.");
+        }
+
+        let responseText = `Dashboard Update Result:\n\n`;
+
+        if (dashboard) {
+          const updatedDashboard = await client.dashboards.updateDashboard(dashboard_id, dashboard);
+          responseText += `Dashboard Updated:\n`;
+          responseText += `${JSON.stringify(updatedDashboard, null, 2)}\n\n`;
+        }
+
+        if (embedded_config) {
+          const updatedEmbedded = await client.dashboards.setEmbeddedDashboardConfig(dashboard_id, embedded_config);
+          responseText += `Embedded Config Updated:\n`;
+          responseText += `${JSON.stringify(updatedEmbedded, null, 2)}\n`;
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText,
+            },
+          ],
+        };
+      }
+
+      case "add_chart_to_dashboard": {
+        const { dashboard_id, chart_id, width, height, row_index } = args;
+
+        const dashboard = await client.dashboards.getDashboard(dashboard_id);
+        const chart = await client.charts.getChart(chart_id);
+
+        const dashboardId = dashboard.id;
+        const existingDashboards = chart.dashboards?.map(d => d.id) || [];
+        const dashboardsToSet = existingDashboards.includes(dashboardId)
+          ? existingDashboards
+          : [...existingDashboards, dashboardId];
+
+        if (!existingDashboards.includes(dashboardId)) {
+          await client.charts.updateChart(chart_id, { dashboards: dashboardsToSet });
+        }
+
+        const layout = parsePositionJson(dashboard.position_json);
+        ensureLayoutBase(layout);
+
+        const existingChartNodeId = findChartNodeId(layout, chart_id);
+        const rowId = existingChartNodeId ? null : generateNodeId("ROW");
+        const chartNodeId = existingChartNodeId ?? generateNodeId(`CHART-${chart_id}`);
+
+        const chartMeta: Record<string, any> = {
+          chartId: chart_id,
+          height: typeof height === "number" ? height : DEFAULT_CHART_HEIGHT,
+          sliceName: chart.slice_name || `Chart ${chart_id}`,
+          width: typeof width === "number" ? width : DEFAULT_CHART_WIDTH,
+        };
+
+        if ((chart as any).uuid) {
+          chartMeta.uuid = (chart as any).uuid;
+        }
+
+        if (!existingChartNodeId && rowId) {
+          layout[rowId] = {
+            children: [chartNodeId],
+            id: rowId,
+            meta: {
+              background: "BACKGROUND_TRANSPARENT",
+            },
+            parents: [ROOT_NODE_ID, GRID_NODE_ID],
+            type: "ROW",
+          };
+
+          layout[chartNodeId] = {
+            children: [],
+            id: chartNodeId,
+            meta: chartMeta,
+            parents: [ROOT_NODE_ID, GRID_NODE_ID, rowId],
+            type: "CHART",
+          };
+
+          const gridChildren = layout[GRID_NODE_ID].children as string[];
+          const insertIndex = typeof row_index === "number"
+            ? Math.max(0, Math.min(row_index, gridChildren.length))
+            : gridChildren.length;
+          gridChildren.splice(insertIndex, 0, rowId);
+        } else if (existingChartNodeId && layout[chartNodeId]?.meta) {
+          layout[chartNodeId].meta = {
+            ...layout[chartNodeId].meta,
+            chartId: chart_id,
+            sliceName: chart.slice_name || layout[chartNodeId].meta.sliceName,
+            uuid: chartMeta.uuid || layout[chartNodeId].meta.uuid,
+          };
+        }
+
+        const metadata = parseJsonMetadata(dashboard.json_metadata);
+        addChartToMetadata(metadata, chart_id);
+
+        const updatedDashboard = await client.dashboards.updateDashboard(dashboardId, {
+          position_json: JSON.stringify(layout),
+          json_metadata: JSON.stringify(metadata),
+        });
+
+        const responseText = [
+          "Dashboard Chart Added:",
+          "",
+          `Dashboard ID: ${dashboardId}`,
+          `Chart ID: ${chart_id}`,
+          `Row ID: ${rowId || "N/A (already in layout)"}`,
+          `Chart Node ID: ${chartNodeId}`,
+          "",
+          "Dashboard Updated:",
+          JSON.stringify(updatedDashboard, null, 2),
+        ].join("\n");
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText,
+            },
+          ],
+        };
+      }
+
+      case "remove_chart_from_dashboard": {
+        const { dashboard_id, chart_id } = args;
+
+        const dashboard = await client.dashboards.getDashboard(dashboard_id);
+        const chart = await client.charts.getChart(chart_id);
+
+        const dashboardId = dashboard.id;
+        const existingDashboards = chart.dashboards?.map(d => d.id) || [];
+        const dashboardsToSet = existingDashboards.filter(id => id !== dashboardId);
+
+        if (existingDashboards.includes(dashboardId)) {
+          await client.charts.updateChart(chart_id, { dashboards: dashboardsToSet });
+        }
+
+        const layout = parsePositionJson(dashboard.position_json);
+        ensureLayoutBase(layout);
+
+        const { chartNodeId, rowNodeId } = removeChartFromLayout(layout, chart_id);
+
+        const metadata = parseJsonMetadata(dashboard.json_metadata);
+        removeChartFromMetadata(metadata, chart_id);
+
+        const updatedDashboard = await client.dashboards.updateDashboard(dashboardId, {
+          position_json: JSON.stringify(layout),
+          json_metadata: JSON.stringify(metadata),
+        });
+
+        const responseText = [
+          "Dashboard Chart Removed:",
+          "",
+          `Dashboard ID: ${dashboardId}`,
+          `Chart ID: ${chart_id}`,
+          `Chart Node ID: ${chartNodeId}`,
+          rowNodeId ? `Row ID Removed: ${rowNodeId}` : "Row ID Removed: N/A",
+          "",
+          "Dashboard Updated:",
+          JSON.stringify(updatedDashboard, null, 2),
+        ].join("\n");
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: responseText,
             },
           ],
         };
