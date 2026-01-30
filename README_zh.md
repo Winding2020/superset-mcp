@@ -134,7 +134,6 @@
 
 - `superset://datasets` - 所有数据集概览
 - `superset://databases` - 数据库连接列表  
-- `superset://dataset-metrics` - 所有数据集中指标的概览
 
 
 ## Prompt 示例

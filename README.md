@@ -134,7 +134,6 @@ Access read-only overviews through MCP resources:
 
 - `superset://datasets` - Overview of all datasets
 - `superset://databases` - List of database connections  
-- `superset://dataset-metrics` - Overview of all metrics across datasets
 
 
 ## Prompt examples
