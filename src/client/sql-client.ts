@@ -32,7 +32,6 @@ export class SqlClient extends BaseSuperset {
         expand_data: request.expand_data !== false, // Default to true
         select_as_cta: false, // Disable CTA
         ctas_method: 'TABLE',
-        json: true, // Add json parameter
       };
 
       const response = await this.makeProtectedRequest({
