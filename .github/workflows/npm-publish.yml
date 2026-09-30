@@ -1,0 +1,58 @@
+name: Publish to npm
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Validate release version
+        id: release
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { appendFileSync, readFileSync } from 'node:fs';
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
+          assert.equal(process.env.GITHUB_REF_NAME, `v${pkg.version}`, 'Release tag must match package.json');
+          assert.equal(lock.version, pkg.version, 'Lockfile version must match package.json');
+          assert.equal(lock.packages[''].version, pkg.version, 'Lockfile root version must match package.json');
+          const distTag = pkg.version.includes('-') ? 'next' : 'latest';
+          appendFileSync(process.env.GITHUB_OUTPUT, `version=${pkg.version}\ndist-tag=${distTag}\n`);
+          NODE
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11
+      - run: npm ci
+      - name: Build and pack
+        run: npm pack
+      - name: Verify packaged CLI
+        env:
+          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          smoke_dir=$(mktemp -d)
+          npm install --prefix "$smoke_dir" --ignore-scripts --no-audit --no-fund "$GITHUB_WORKSPACE/superset-mcp-${PACKAGE_VERSION}.tgz"
+          actual=$("$smoke_dir/node_modules/.bin/superset-mcp" --version)
+          test "$actual" = "superset-mcp ${PACKAGE_VERSION}"
+      - name: Publish verified package with OIDC
+        env:
+          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
+          NPM_DIST_TAG: ${{ steps.release.outputs.dist-tag }}
+        run: npm publish "superset-mcp-${PACKAGE_VERSION}.tgz" --access public --tag "$NPM_DIST_TAG"

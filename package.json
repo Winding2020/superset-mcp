@@ -8,7 +8,8 @@
     "superset-mcp": "build/index.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x build/index.js",
+    "build": "tsc && node --input-type=module -e \"import { chmodSync } from 'node:fs'; chmodSync('build/index.js', 0o755);\"",
+    "prepack": "npm run build",
     "dev": "tsc --watch",
     "start": "node build/index.js",
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
@@ -36,6 +37,10 @@
     "model-context-protocol"
   ],
   "homepage": "https://github.com/winding2020/superset-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Winding2020/superset-mcp.git"
+  },
   "author": "Winding2020",
   "license": "MIT"
 }
